@@ -22,6 +22,11 @@ import { TestReport } from "./models.js";
 
 import { pino } from "pino";
 
+import { loadTests } from "./loader.js";
+import { runTests } from "./runner.js";
+import { CategoryReport } from "./models.js";
+
+
 const logger = pino({
   transport: {
     target: "pino-pretty",
@@ -196,7 +201,7 @@ function parseArguments(): CliArguments {
   return args;
 }
 
-function main(): void {
+async function main(): Promise<void> {
   /**
    * The main entry point for the SOL26 integration testing script.
    * It parses command-line arguments and executes the testing process.
@@ -217,10 +222,32 @@ function main(): void {
     logger.level = "info";
   }
 
-  // TODO: Your code for discovering and executing the test cases goes here.
+  const { tests, unexecuted } = loadTests({
+    tests_dir: args.tests_dir,
+    recursive: args.recursive,
+    include: args.include,
+    include_category: args.include_category,
+    include_test: args.include_test,
+    exclude: args.exclude,
+    exclude_category: args.exclude_category,
+    exclude_test: args.exclude_test,
+    regex_filters: args.regex_filters,
+  });
 
-  // Example of how to write the final report:
-  const report = new TestReport({ discovered_test_cases: [], unexecuted: {}, results: {} });
+  logger.info("Discovered %d tests, %d unexecuted", tests.length, Object.keys(unexecuted).length);
+
+  let results: Record<string, CategoryReport> | null = null;
+
+  if (!args.dry_run) {
+    results = await runTests(tests);
+  }
+
+  const report = new TestReport({
+    discovered_test_cases: tests,
+    unexecuted,
+    results,
+  });
+
   writeResult(report, args.output);
 }
 
