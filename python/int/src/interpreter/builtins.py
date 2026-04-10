@@ -63,7 +63,7 @@ def dispatch_builtin(
     if isinstance(receiver, SOLBool):
         return _dispatch_bool(receiver, selector, args, invoke_block)
     if isinstance(receiver, SOLNil):
-        return _dispatch_nil(receiver, selector)
+        return _dispatch_nil(receiver, selector, args)
     if isinstance(receiver, SOLBlock):
         return _dispatch_block(receiver, selector, args, invoke_block)
 
@@ -389,10 +389,7 @@ def _dispatch_bool(
 # Nil
 # ------------------------------------------------------------------
 
-def _dispatch_nil(
-    receiver: SOLNil,
-    selector: str,
-) -> SOLObject | None:
+def _dispatch_nil(receiver: SOLNil, selector: str, args: list[SOLObject]) -> SOLObject | None:
     match selector:
         case "isNil":
             return _TRUE
