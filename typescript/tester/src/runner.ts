@@ -153,19 +153,12 @@ function runSingleTest(test: TestCaseDefinition): TestCaseReport | UnexecutedRea
       return new UnexecutedReason(UnexecutedReasonCode.OTHER, "No XML file to interpret");
     }
 
-    console.error(
-      `[DEBUG] Running interpreter: ${INTERPRETER_CMD} ${[...INTERPRETER_ARGS, xmlPath].join(" ")}`
-    );
 
     const interpResult = runProcess(
       INTERPRETER_CMD,
       [...INTERPRETER_ARGS, xmlPath],
       test.stdin_file,
       "/int/src"
-    );
-
-    console.error(
-      `[DEBUG] Interpreter result: code=${interpResult.code}, stderr="${interpResult.stderr.substring(0, 200)}"`
     );
 
     const interpCode = interpResult.code;
