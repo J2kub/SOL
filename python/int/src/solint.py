@@ -39,10 +39,8 @@ def main() -> None:
     # Define the CLI arguments
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument(
-        "-s",
-        "--source",
+        "source",
         type=Path,
-        required=True,
         help="Path to the SOL-XML source file to be interpreted.",
     )
     arg_parser.add_argument(
@@ -51,7 +49,7 @@ def main() -> None:
         type=Path,
         required=False,
         help="Path to a file that will be used as the standard input "
-        "for the interpreted program (optional).",
+             "for the interpreted program (optional).",
     )
     arg_parser.add_argument(
         "-v",
