@@ -130,6 +130,18 @@ def _dispatch_object(
     invoke_block: BlockInvoker,
 ) -> SOLObject | None:
     """Methods defined on Object — available to all SOL26 objects."""
+    result = _dispatch_object_basic(receiver, selector, args)
+    if result is not None:
+        return result
+    return _dispatch_object_nil_checks(receiver, selector, args, invoke_block)
+
+
+def _dispatch_object_basic(
+    receiver: SOLObject,
+    selector: str,
+    args: list[SOLObject],
+) -> SOLObject | None:
+    """Identity, equality, type checks and printing for all objects."""
     match selector:
         case "identicalTo:":
             return get_bool(receiver is args[0])
@@ -152,6 +164,17 @@ def _dispatch_object(
         case "print" | "printNl":
             print(receiver.sol_as_string(), end="")
             return receiver
+    return None
+
+
+def _dispatch_object_nil_checks(
+    receiver: SOLObject,
+    selector: str,
+    args: list[SOLObject],
+    invoke_block: BlockInvoker,
+) -> SOLObject | None:
+    """ifNil:/ifNotNil: variants for all objects."""
+    match selector:
         case "ifNil:":
             _assert_block(args[0], selector, expected_arity=0)
             block_arg = cast(SOLBlock, args[0])
@@ -202,6 +225,18 @@ def _dispatch_integer_arithmetic(
     args: list[SOLObject],
 ) -> SOLObject | None:
     """Arithmetic and comparison messages for Integer."""
+    result = _dispatch_integer_math(receiver, selector, args)
+    if result is not None:
+        return result
+    return _dispatch_integer_cmp(receiver, selector, args)
+
+
+def _dispatch_integer_math(
+    receiver: SOLInteger,
+    selector: str,
+    args: list[SOLObject],
+) -> SOLObject | None:
+    """Arithmetic operations (+, -, *, //, \\\\) for Integer."""
     match selector:
         case "plus:" | "+":
             _assert_integer(args[0], selector)
@@ -228,6 +263,16 @@ def _dispatch_integer_arithmetic(
                     message="Modulo by zero",
                 )
             return SOLInteger(receiver.value % _int(args[0]))
+    return None
+
+
+def _dispatch_integer_cmp(
+    receiver: SOLInteger,
+    selector: str,
+    args: list[SOLObject],
+) -> SOLObject | None:
+    """Comparison operations (>, <, >=, <=, equalTo:, ~=) for Integer."""
+    match selector:
         case "greaterThan:" | ">":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value > _int(args[0]))
