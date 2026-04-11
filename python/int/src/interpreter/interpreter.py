@@ -405,7 +405,6 @@ class Interpreter:
             "not",
             "and",
             "or",
-            "value",
             "whileTrue:",
             "whileFalse:",
         }
