@@ -50,12 +50,10 @@ def dispatch_builtin(
     Try to dispatch a message on a built-in object.
     Returns SOLObject on success, None if the selector is unknown (→ INT_DNU in interpreter).
     """
-    # Object-level methods first (inherited by everything)
     result = _dispatch_object(receiver, selector, args, invoke_block)
     if result is not None:
         return result
 
-    # Type-specific dispatch
     if isinstance(receiver, SOLInteger):
         return _dispatch_integer(receiver, selector, args, invoke_block)
     if isinstance(receiver, SOLString):
@@ -67,7 +65,6 @@ def dispatch_builtin(
     if isinstance(receiver, SOLBlock):
         return _dispatch_block(receiver, selector, args, invoke_block)
 
-    # SOLInstance — only Object-level methods apply (already checked above)
     return None
 
 
@@ -131,9 +128,9 @@ def _dispatch_object(
     match selector:
         case "identicalTo:":
             return get_bool(receiver is args[0])
-        case "equalTo:":
+        case "equalTo:" | "=":
             return get_bool(_sol_equal(receiver, args[0]))
-        case "asString":
+        case "asString" | "printString":
             return SOLString(receiver.sol_as_string())
         case "isNil":
             return get_bool(isinstance(receiver, SOLNil))
@@ -147,7 +144,7 @@ def _dispatch_object(
             return get_bool(isinstance(receiver, SOLBlock))
         case "isBoolean":
             return get_bool(isinstance(receiver, SOLBool))
-        case "print":
+        case "print" | "printNl":
             print(receiver.sol_as_string(), end="")
             return receiver
         case "ifNil:":
@@ -186,6 +183,7 @@ def _dispatch_integer(
     invoke_block: BlockInvoker,
 ) -> SOLObject | None:
     match selector:
+        # Verbose selectors
         case "plus:":
             _assert_integer(args[0], selector)
             return SOLInteger(receiver.value + _int(args[0]))
@@ -211,10 +209,6 @@ def _dispatch_integer(
                     message="Modulo by zero",
                 )
             return SOLInteger(receiver.value % _int(args[0]))
-        case "equalTo:":
-            if not isinstance(args[0], SOLInteger):
-                return _FALSE
-            return get_bool(receiver.value == _int(args[0]))
         case "greaterThan:":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value > _int(args[0]))
@@ -227,11 +221,57 @@ def _dispatch_integer(
         case "lessOrEqualTo:":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value <= _int(args[0]))
-        case "asString":
+        case "equalTo:":
+            if not isinstance(args[0], SOLInteger):
+                return _FALSE
+            return get_bool(receiver.value == _int(args[0]))
+        # Smalltalk operator selectors
+        case "+":
+            _assert_integer(args[0], selector)
+            return SOLInteger(receiver.value + _int(args[0]))
+        case "-":
+            _assert_integer(args[0], selector)
+            return SOLInteger(receiver.value - _int(args[0]))
+        case "*":
+            _assert_integer(args[0], selector)
+            return SOLInteger(receiver.value * _int(args[0]))
+        case "//":
+            _assert_integer(args[0], selector)
+            if _int(args[0]) == 0:
+                raise InterpreterError(
+                    error_code=ErrorCode.INT_INVALID_ARG,
+                    message="Division by zero",
+                )
+            return SOLInteger(receiver.value // _int(args[0]))
+        case "\\\\":
+            _assert_integer(args[0], selector)
+            if _int(args[0]) == 0:
+                raise InterpreterError(
+                    error_code=ErrorCode.INT_INVALID_ARG,
+                    message="Modulo by zero",
+                )
+            return SOLInteger(receiver.value % _int(args[0]))
+        case "<":
+            _assert_integer(args[0], selector)
+            return get_bool(receiver.value < _int(args[0]))
+        case ">":
+            _assert_integer(args[0], selector)
+            return get_bool(receiver.value > _int(args[0]))
+        case "<=":
+            _assert_integer(args[0], selector)
+            return get_bool(receiver.value <= _int(args[0]))
+        case ">=":
+            _assert_integer(args[0], selector)
+            return get_bool(receiver.value >= _int(args[0]))
+        case "~=":
+            if not isinstance(args[0], SOLInteger):
+                return _TRUE
+            return get_bool(receiver.value != _int(args[0]))
+        case "asString" | "printString":
             return SOLString(str(receiver.value))
         case "asInteger":
             return receiver
-        case "print":
+        case "print" | "printNl":
             print(receiver.sol_as_string(), end="")
             return receiver
         case "timesRepeat:":
@@ -275,25 +315,25 @@ def _dispatch_string(
     args: list[SOLObject],
 ) -> SOLObject | None:
     match selector:
-        case "print":
+        case "print" | "printNl":
             print(receiver.value, end="")
             return receiver
-        case "equalTo:":
+        case "equalTo:" | "=":
             if not isinstance(args[0], SOLString):
                 return _FALSE
             return get_bool(receiver.value == args[0].value)
-        case "asString":
+        case "asString" | "printString":
             return receiver
         case "asInteger":
             try:
                 return SOLInteger(int(receiver.value))
             except ValueError:
                 return _NIL
-        case "concatenateWith:":
+        case "concatenateWith:" | ",":
             if not isinstance(args[0], SOLString):
                 return _NIL
             return SOLString(receiver.value + args[0].value)
-        case "length":
+        case "length" | "size":
             return SOLInteger(len(receiver.value))
         case "startsWith:endsBefore:":
             return _string_substring(receiver, args)
@@ -301,11 +341,6 @@ def _dispatch_string(
 
 
 def _string_substring(receiver: SOLString, args: list[SOLObject]) -> SOLObject:
-    """
-    startsWith:endsBefore: — returns substring.
-    Spec: indexes from 1; if args non-positive or non-integer → nil;
-    if endsBefore > length → return up to end; if diff <= 0 → empty string.
-    """
     if not isinstance(args[0], SOLInteger) or not isinstance(args[1], SOLInteger):
         return _NIL
     start = args[0].value
@@ -354,7 +389,7 @@ def _dispatch_bool(
             return invoke_block(args[1], [])  # type: ignore[arg-type]
         case "not":
             return get_bool(not receiver.value)
-        case "and:":
+        case "and:" | "&":
             _assert_block(args[0], selector, expected_arity=0)
             if not receiver.value:
                 return _FALSE
@@ -365,7 +400,7 @@ def _dispatch_bool(
                     message="'and:' block must return a Bool",
                 )
             return result
-        case "or:":
+        case "or:" | "|":
             _assert_block(args[0], selector, expected_arity=0)
             if receiver.value:
                 return _TRUE
@@ -376,15 +411,15 @@ def _dispatch_bool(
                     message="'or:' block must return a Bool",
                 )
             return result
-        case "equalTo:":
+        case "equalTo:" | "=":
             if not isinstance(args[0], SOLBool):
                 return _FALSE
             return get_bool(receiver.value == args[0].value)
-        case "asString":
+        case "asString" | "printString":
             return SOLString("true" if receiver.value else "false")
         case "isBoolean":
             return _TRUE
-        case "print":
+        case "print" | "printNl":
             print(receiver.sol_as_string(), end="")
             return receiver
     return None
@@ -400,11 +435,11 @@ def _dispatch_nil(receiver: SOLNil, selector: str, args: list[SOLObject]) -> SOL
             return _TRUE
         case "notNil":
             return _FALSE
-        case "asString":
+        case "asString" | "printString":
             return SOLString("nil")
-        case "equalTo:":
+        case "equalTo:" | "=":
             return get_bool(isinstance(args[0], SOLNil))
-        case "print":
+        case "print" | "printNl":
             print("nil", end="")
             return receiver
     return None
@@ -496,11 +531,6 @@ def _instantiate(class_name: str) -> SOLObject:
 
 
 def _copy_from(class_name: str, obj: SOLObject) -> SOLObject:
-    """
-    Create a new instance of class_name initialized from obj (from: constructor).
-    Copies internal attributes and does a shallow copy of instance attributes.
-    Raises error 53 if internal attribute types are incompatible.
-    """
     match class_name:
         case "Integer":
             if not isinstance(obj, SOLInteger):
@@ -530,10 +560,6 @@ def _copy_from(class_name: str, obj: SOLObject) -> SOLObject:
 
 
 def _instantiate_subclass(class_name: str, obj: SOLObject) -> SOLObject:
-    """
-    For user-defined subclasses of built-in types (e.g. Factorial(Integer)).
-    Copies the internal value from obj.
-    """
     if isinstance(obj, SOLInteger):
         new_instance = SOLInteger(obj.value)
         new_instance.class_name = class_name
@@ -563,11 +589,6 @@ def _instantiate_subclass(class_name: str, obj: SOLObject) -> SOLObject:
 # ------------------------------------------------------------------
 
 def _sol_equal(a: SOLObject, b: SOLObject) -> bool:
-    """
-    Standard SOL26 equality.
-    For objects with internal attributes (Integer, String, Bool): compare values.
-    For others (instances, nil): use identity.
-    """
     if isinstance(a, SOLInteger) and isinstance(b, SOLInteger):
         return a.value == b.value
     if isinstance(a, SOLString) and isinstance(b, SOLString):
@@ -584,7 +605,6 @@ def _sol_equal(a: SOLObject, b: SOLObject) -> bool:
 # ------------------------------------------------------------------
 
 def _assert_integer(arg: SOLObject, selector: str) -> None:
-    """Raise INT_OTHER 52 if argument is not SOLInteger."""
     if not isinstance(arg, SOLInteger):
         raise InterpreterError(
             error_code=ErrorCode.INT_OTHER,
@@ -593,7 +613,6 @@ def _assert_integer(arg: SOLObject, selector: str) -> None:
 
 
 def _assert_block(obj: SOLObject, selector: str, expected_arity: int) -> None:
-    """Raise INT_DNU if obj is not a SOLBlock with the expected arity."""
     if not isinstance(obj, SOLBlock):
         raise InterpreterError(
             error_code=ErrorCode.INT_DNU,
@@ -611,6 +630,5 @@ def _assert_block(obj: SOLObject, selector: str, expected_arity: int) -> None:
 
 
 def _int(obj: SOLObject) -> int:
-    """Extract int value from SOLInteger — caller must assert type first."""
     assert isinstance(obj, SOLInteger)
     return obj.value
