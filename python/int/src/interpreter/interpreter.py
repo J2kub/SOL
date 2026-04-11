@@ -412,7 +412,7 @@ class Interpreter:
 
         if attr_name in builtin_method_names:
             raise InterpreterError(
-                error_code=ErrorCode.INT_ATTR_COLLISION,
+                error_code=ErrorCode.INT_INST_ATTR,
                 message=(
                     f"Cannot create attribute '{attr_name}': "
                     "collides with a built-in method"
@@ -433,7 +433,7 @@ class Interpreter:
 
         if collides:
             raise InterpreterError(
-                error_code=ErrorCode.INT_ATTR_COLLISION,
+                error_code=ErrorCode.INT_INST_ATTR,
                 message=(
                     f"Cannot create attribute '{attr_name}': "
                     f"collides with a method in '{receiver.class_name}'"

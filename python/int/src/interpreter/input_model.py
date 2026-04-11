@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 This module defines the data models for representing SOL-XML programs in memory,
 using Pydantic and pydantic-xml.

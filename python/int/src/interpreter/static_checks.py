@@ -208,11 +208,11 @@ def _check_block_assign_to_params(block: Block, context: str) -> None:
     param_names = {param.name for param in block.parameters}
 
     for assign in block.assigns:
-        if assign.var.name in param_names:
+        if assign.target.name in param_names:
             raise InterpreterError(
                 error_code=ErrorCode.SEM_ASSIGN,
                 message=(
-                    f"Assignment to formal parameter '{assign.var.name}' "
+                    f"Assignment to formal parameter '{assign.target.name}' "
                     f"in block of '{context}'"
                 ),
             )
@@ -264,7 +264,7 @@ def _check_expr_class_literals(
 ) -> None:
     """Recursively check an expression tree for unknown class literals."""
     if expr.literal is not None:
-        if expr.literal.class_name == "class" and expr.literal.value not in known:
+        if expr.literal.class_id == "class" and expr.literal.value not in known:
             raise InterpreterError(
                 error_code=ErrorCode.SEM_UNDEF,
                 message=(
