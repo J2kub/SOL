@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 This module contains the main logic of the interpreter.
 
@@ -10,7 +9,7 @@ Author:
 
 import logging
 from pathlib import Path
-from typing import TextIO
+from typing import TextIO, cast
 
 from lxml import etree
 from lxml.etree import ParseError
@@ -78,7 +77,9 @@ class Interpreter:
                 error_code=ErrorCode.INT_XML, message="Error parsing input XML"
             ) from e
         try:
-            self.current_program = Program.from_xml_tree(xml_tree.getroot())  # type: ignore[attr-defined]
+            self.current_program = cast(
+                Program, Program.from_xml_tree(xml_tree.getroot())
+            )
         except ValidationError as e:
             raise InterpreterError(
                 error_code=ErrorCode.INT_STRUCTURE, message="Invalid SOL-XML structure"
@@ -233,6 +234,7 @@ class Interpreter:
         this ensures correct static scoping even when a block is passed to another object.
         """
         block_def = sol_block.block_def
+        assert block_def is not None, "SOLBlock must have a block_def"
         block_env = Environment(parent=sol_block.captured_env)
 
         # Restore captured self (static scoping of self per spec section 1.2.7)
@@ -240,10 +242,10 @@ class Interpreter:
             block_env.set("self", sol_block.self_ref)
         # __current_class__ flows through parent chain from captured_env — no reset needed
 
-        for param, arg in zip(block_def.parameters, args, strict=True):  # type: ignore[union-attr]
+        for param, arg in zip(block_def.parameters, args, strict=True):
             block_env.set(param.name, arg)
 
-        return self._execute_block(block_def, block_env)  # type: ignore[arg-type]
+        return self._execute_block(block_def, block_env)
 
     def _execute_block(self, block: Block, env: Environment) -> SOLObject:
         """Execute a sequence of assignments and return the last evaluated value."""
