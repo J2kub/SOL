@@ -7,6 +7,7 @@ IPP: You should not need to modify this file. If you find it necessary to modify
      consult your intentions on the project forum first.
 
 Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+Author: Jakub Glončák <xgloncj00@stud.fit.vut.cz>
 """
 
 from __future__ import annotations

@@ -1,4 +1,8 @@
-"""SOL26 class table - stores all class definitions."""
+"""SOL26 class table - stores all class definitions.
+
+Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+Author: Jakub Glončák <xgloncj00@stud.fit.vut.cz>
+"""
 
 from __future__ import annotations
 

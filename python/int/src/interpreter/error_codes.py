@@ -6,6 +6,7 @@ IPP: You should not need to modify this file. However, you may add additional he
      to the ErrorCode class.
 
 Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+Author: Jakub Glončák <xgloncj00@stud.fit.vut.cz>
 """
 
 import sys

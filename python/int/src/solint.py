@@ -5,6 +5,7 @@ This script serves as the main entry point for the SOL26 interpreter.
 IPP: You should not need to modify this file.
 
 Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+Author: Jakub Glončák <xgloncj00@stud.fit.vut.cz>
 """
 
 import argparse

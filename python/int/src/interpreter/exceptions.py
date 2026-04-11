@@ -8,6 +8,7 @@ IPP: You can freely modify this file and add any additional exception classes.
      the interpreter to exit with a specific error code).
 
 Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+Author: Jakub Glončák <xgloncj00@stud.fit.vut.cz>
 """
 
 from interpreter.error_codes import ErrorCode

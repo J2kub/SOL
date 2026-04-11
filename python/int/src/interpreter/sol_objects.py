@@ -1,4 +1,8 @@
-"""SOL26 runtime objects."""
+"""SOL26 runtime objects.
+
+Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+Author: Jakub Glončák <xgloncj00@stud.fit.vut.cz>
+"""
 
 from __future__ import annotations
 
