@@ -50,10 +50,7 @@ def _check_no_duplicate_methods(program: Program) -> None:
             if method.selector in seen:
                 raise InterpreterError(
                     error_code=ErrorCode.SEM_ERROR,
-                    message=(
-                        f"Duplicate method '{method.selector}' "
-                        f"in class '{class_def.name}'"
-                    ),
+                    message=(f"Duplicate method '{method.selector}' in class '{class_def.name}'"),
                 )
             seen.add(method.selector)
 
@@ -100,8 +97,7 @@ def _check_parent_classes_exist(
             raise InterpreterError(
                 error_code=ErrorCode.SEM_UNDEF,
                 message=(
-                    f"Class '{class_def.name}' inherits from unknown class "
-                    f"'{class_def.parent}'"
+                    f"Class '{class_def.name}' inherits from unknown class '{class_def.parent}'"
                 ),
             )
 
@@ -168,10 +164,7 @@ def _check_block_duplicate_params(block: Block, context: str) -> None:
         if param.name in seen:
             raise InterpreterError(
                 error_code=ErrorCode.SEM_ERROR,
-                message=(
-                    f"Duplicate parameter name '{param.name}' "
-                    f"in block of '{context}'"
-                ),
+                message=(f"Duplicate parameter name '{param.name}' in block of '{context}'"),
             )
         seen.add(param.name)
 
@@ -271,10 +264,7 @@ def _check_expr_class_literals(
     ):
         raise InterpreterError(
             error_code=ErrorCode.SEM_UNDEF,
-            message=(
-                f"Unknown class literal '{expr.literal.value}' "
-                f"in '{context}'"
-            ),
+            message=(f"Unknown class literal '{expr.literal.value}' in '{context}'"),
         )
 
     if expr.block is not None:

@@ -41,6 +41,7 @@ def get_bool(value: bool) -> SOLBool:
 # Main dispatch entry point
 # ------------------------------------------------------------------
 
+
 def dispatch_builtin(
     receiver: SOLObject,
     selector: str,
@@ -73,6 +74,7 @@ def dispatch_builtin(
 # ------------------------------------------------------------------
 # Class messages: new, from:, String read, Transcript show:
 # ------------------------------------------------------------------
+
 
 def dispatch_class_message(
     class_name: str,
@@ -112,16 +114,14 @@ def dispatch_class_message(
         case _:
             raise InterpreterError(
                 error_code=ErrorCode.INT_DNU,
-                message=(
-                    f"Class '{class_name}' does not understand "
-                    f"class message '{selector}'"
-                ),
+                message=(f"Class '{class_name}' does not understand class message '{selector}'"),
             )
 
 
 # ------------------------------------------------------------------
 # Object methods (inherited by all)
 # ------------------------------------------------------------------
+
 
 def _dispatch_object(
     receiver: SOLObject,
@@ -205,6 +205,7 @@ def _dispatch_object_nil_checks(
 # ------------------------------------------------------------------
 # Integer
 # ------------------------------------------------------------------
+
 
 def _dispatch_integer(
     receiver: SOLInteger,
@@ -355,6 +356,7 @@ def _integer_times_repeat(
 # String
 # ------------------------------------------------------------------
 
+
 def _dispatch_string(
     receiver: SOLString,
     selector: str,
@@ -403,6 +405,7 @@ def _string_substring(receiver: SOLString, args: list[SOLObject]) -> SOLObject:
 # ------------------------------------------------------------------
 # Bool (True / False)
 # ------------------------------------------------------------------
+
 
 def _dispatch_bool(
     receiver: SOLBool,
@@ -500,6 +503,7 @@ def _dispatch_bool_other(
 # Nil
 # ------------------------------------------------------------------
 
+
 def _dispatch_nil(
     receiver: SOLNil,
     selector: str,
@@ -524,6 +528,7 @@ def _dispatch_nil(
 # ------------------------------------------------------------------
 # Block
 # ------------------------------------------------------------------
+
 
 def _dispatch_block(
     receiver: SOLBlock,
@@ -586,6 +591,7 @@ def _while_loop(
 # ------------------------------------------------------------------
 # Constructors: new, from:
 # ------------------------------------------------------------------
+
 
 def _instantiate(class_name: str) -> SOLObject:
     """Create a new instance of a built-in class with default values."""
@@ -669,6 +675,7 @@ def _instantiate_subclass(class_name: str, obj: SOLObject) -> SOLObject:
 # Equality
 # ------------------------------------------------------------------
 
+
 def _sol_equal(a: SOLObject, b: SOLObject) -> bool:
     """Value equality for built-in types; identity fallback for instances."""
     if isinstance(a, SOLInteger) and isinstance(b, SOLInteger):
@@ -685,6 +692,7 @@ def _sol_equal(a: SOLObject, b: SOLObject) -> bool:
 # ------------------------------------------------------------------
 # Assertion helpers
 # ------------------------------------------------------------------
+
 
 def _assert_integer(arg: SOLObject, selector: str) -> None:
     """Raise INT_OTHER if arg is not an Integer."""
@@ -708,8 +716,7 @@ def _assert_block(obj: SOLObject, selector: str, expected_arity: int) -> None:
         raise InterpreterError(
             error_code=ErrorCode.INT_DNU,
             message=(
-                f"'{selector}' expects block with arity {expected_arity}, "
-                f"got arity {actual}"
+                f"'{selector}' expects block with arity {expected_arity}, got arity {actual}"
             ),
         )
 

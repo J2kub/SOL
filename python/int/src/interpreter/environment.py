@@ -1,4 +1,4 @@
-﻿"""SOL26 variable environment (scope)."""
+"""SOL26 variable environment (scope)."""
 
 from __future__ import annotations
 
