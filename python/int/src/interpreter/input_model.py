@@ -1,13 +1,15 @@
-from __future__ import annotations
 """
-This module defines the data models for representing SOL-XML programs in memory,
-using Pydantic and pydantic-xml.
+Data models for representing SOL-XML programs in memory.
+
+Uses Pydantic and pydantic-xml for XML deserialization.
 
 IPP: You should not need to modify this file. If you find it necessary to modify it,
      consult your intentions on the project forum first.
 
 Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
 """
+
+from __future__ import annotations
 
 from typing import Any
 
@@ -52,7 +54,7 @@ class Arg(OrderedElementXmlModel, tag="arg"):
 
 
 def sort_by_order[T: OrderedElementXmlModel](items: list[T]) -> list[T]:
-    """Sorts list of elements that carry an `order` attribute."""
+    """Sort list of elements that carry an `order` attribute."""
     return sorted(items, key=lambda x: x.order)
 
 
@@ -99,8 +101,7 @@ class Send(BaseXmlModel, tag="send", search_mode="unordered"):
 
     def model_post_init(self, context: Any) -> None:
         """
-        After the model is initialized, ensure the args are sorted
-        according to their declared order.
+        Ensure args are sorted according to their declared order.
         """
         self.args = sort_by_order(self.args)
 
@@ -133,8 +134,7 @@ class Block(BaseXmlModel, tag="block", search_mode="unordered"):
 
     def model_post_init(self, context: Any) -> None:
         """
-        After the model is initialized, ensure the parameters and assignments
-        are sorted according to their declared order.
+        Ensure parameters and assignments are sorted according to their declared order.
         """
         self.parameters = sort_by_order(self.parameters)
         self.assigns = sort_by_order(self.assigns)
