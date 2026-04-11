@@ -18,6 +18,7 @@ def run_static_checks(program: Program, class_table: ClassTable) -> None:
     _check_duplicate_params(program)
     _check_assign_to_params(program)
     _check_class_literals_exist(program, class_table)
+    _check_attribute_method_collision(program)
 
 
 # ------------------------------------------------------------------
@@ -280,6 +281,24 @@ def _check_expr_class_literals(
         _check_expr_class_literals(expr.send.receiver, known, context)
         for arg in expr.send.args:
             _check_expr_class_literals(arg.expr, known, context)
+
+
+def _check_attribute_method_collision(program: Program) -> None:
+    """
+    Check that no <attribute> name collides with a method selector
+    defined in the same class (error 54).
+    """
+    for class_def in program.classes:
+        method_selectors = {method.selector for method in class_def.methods}
+        for attr_def in class_def.attributes:
+            if attr_def.name in method_selectors:
+                raise InterpreterError(
+                    error_code=ErrorCode.ATTR_COLLISION,
+                    message=(
+                        f"Cannot create attribute '{attr_def.name}' in class "
+                        f"'{class_def.name}': name collides with a method selector"
+                    ),
+                )
 
 
 def _collect_known_classes(

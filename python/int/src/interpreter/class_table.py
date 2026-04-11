@@ -1,4 +1,4 @@
-﻿"""SOL26 class table - stores all class definitions."""
+"""SOL26 class table - stores all class definitions."""
 
 from __future__ import annotations
 from interpreter.builtins import dispatch_builtin
@@ -18,13 +18,14 @@ class ClassTable:
 
     # Správna hierarchia podľa spec — žiadna trieda Boolean neexistuje!
     BUILTIN_PARENTS: ClassVar[dict[str, str | None]] = {
-        "Object": None,
-        "Nil": "Object",
-        "True": "Object",
-        "False": "Object",
-        "Integer": "Object",
-        "String": "Object",
-        "Block": "Object",
+        "Object":     None,
+        "Nil":        "Object",
+        "True":       "Object",
+        "False":      "Object",
+        "Integer":    "Object",
+        "String":     "Object",
+        "Block":      "Object",
+        "Transcript": "Object",
     }
 
     def __init__(self) -> None:

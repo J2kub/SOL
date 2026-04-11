@@ -154,9 +154,16 @@ class Method(BaseXmlModel, tag="method"):
     block: Block = element(tag="block")
 
 
+class AttributeDef(BaseXmlModel, tag="attribute"):
+    """<attribute name="..."/>"""
+
+    name: str = attr(name="name")
+
+
 class ClassDef(BaseXmlModel, tag="class"):
     """
     <class name="..." parent="...">
+      <attribute name="..."/>  # optional instance variable declarations
       <method selector="...">...</method>
       ...
     </class>
@@ -164,6 +171,7 @@ class ClassDef(BaseXmlModel, tag="class"):
 
     name: str = attr(name="name")
     parent: str = attr(name="parent")
+    attributes: list[AttributeDef] = element(tag="attribute", default_factory=list)
     methods: list[Method] = element(tag="method", default_factory=list)
 
 
