@@ -72,7 +72,7 @@ def dispatch_builtin(
 
 
 # ------------------------------------------------------------------
-# Class messages: new, from:, String read
+# Class messages: new, from:, String read, Transcript show:
 # ------------------------------------------------------------------
 
 def dispatch_class_message(
@@ -80,11 +80,11 @@ def dispatch_class_message(
     selector: str,
     args: list[SOLObject],
 ) -> SOLObject:
-    """Handle class-level messages: new, from:, String read."""
+    """Handle class-level messages: new, from:, String read, Transcript show:."""
     match selector:
         case "new":
             return _instantiate(class_name)
-        case "from":
+        case "from:":
             if not args:
                 raise InterpreterError(
                     error_code=ErrorCode.INT_INVALID_ARG,
@@ -93,13 +93,26 @@ def dispatch_class_message(
             return _copy_from(class_name, args[0])
         case "read" if class_name == "String":
             line = sys.stdin.readline()
-            # Strip trailing newline only (spec: reads one line without the newline)
             if line.endswith("\n"):
                 line = line[:-1]
             return SOLString(line)
+        case "show:" if class_name == "Transcript":
+            if not args:
+                raise InterpreterError(
+                    error_code=ErrorCode.INT_INVALID_ARG,
+                    message="Transcript show: requires one argument",
+                )
+            arg = args[0]
+            if not isinstance(arg, SOLString):
+                raise InterpreterError(
+                    error_code=ErrorCode.INT_OTHER,
+                    message=f"Transcript show: expects String, got '{arg.class_name}'",
+                )
+            print(arg.value)
+            return _NIL
         case _:
             raise InterpreterError(
-                error_code=ErrorCode.SEM_UNDEF,
+                error_code=ErrorCode.INT_DNU,
                 message=f"Class '{class_name}' does not understand class message '{selector}'",
             )
 
@@ -116,9 +129,9 @@ def _dispatch_object(
 ) -> SOLObject | None:
     """Methods defined on Object — available to all SOL26 objects."""
     match selector:
-        case "identicalTo":
+        case "identicalTo:":
             return get_bool(receiver is args[0])
-        case "equalTo":
+        case "equalTo:":
             return get_bool(_sol_equal(receiver, args[0]))
         case "asString":
             return SOLString(receiver.sol_as_string())
@@ -135,7 +148,6 @@ def _dispatch_object(
         case "isBoolean":
             return get_bool(isinstance(receiver, SOLBool))
         case "print":
-            # Fallback print for any object
             print(receiver.sol_as_string(), end="")
             return receiver
         case "ifNil:":
@@ -174,25 +186,24 @@ def _dispatch_integer(
     invoke_block: BlockInvoker,
 ) -> SOLObject | None:
     match selector:
-        case "plus":
+        case "plus:":
             _assert_integer(args[0], selector)
             return SOLInteger(receiver.value + _int(args[0]))
-        case "minus":
+        case "minus:":
             _assert_integer(args[0], selector)
             return SOLInteger(receiver.value - _int(args[0]))
-        case "multiplyBy":
+        case "multiplyBy:":
             _assert_integer(args[0], selector)
             return SOLInteger(receiver.value * _int(args[0]))
-        case "divBy":
+        case "divBy:":
             _assert_integer(args[0], selector)
             if _int(args[0]) == 0:
                 raise InterpreterError(
                     error_code=ErrorCode.INT_INVALID_ARG,
                     message="Division by zero",
                 )
-            # Integer division compatible with implementation language (Python //)
             return SOLInteger(receiver.value // _int(args[0]))
-        case "modBy":
+        case "modBy:":
             _assert_integer(args[0], selector)
             if _int(args[0]) == 0:
                 raise InterpreterError(
@@ -200,26 +211,25 @@ def _dispatch_integer(
                     message="Modulo by zero",
                 )
             return SOLInteger(receiver.value % _int(args[0]))
-        case "equalTo":
+        case "equalTo:":
             if not isinstance(args[0], SOLInteger):
                 return _FALSE
             return get_bool(receiver.value == _int(args[0]))
-        case "greaterThan":
+        case "greaterThan:":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value > _int(args[0]))
-        case "lessThan":
+        case "lessThan:":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value < _int(args[0]))
-        case "greaterOrEqualTo":
+        case "greaterOrEqualTo:":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value >= _int(args[0]))
-        case "lessOrEqualTo":
+        case "lessOrEqualTo:":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value <= _int(args[0]))
         case "asString":
             return SOLString(str(receiver.value))
         case "asInteger":
-            # Returns self
             return receiver
         case "print":
             print(receiver.sol_as_string(), end="")
@@ -268,26 +278,24 @@ def _dispatch_string(
         case "print":
             print(receiver.value, end="")
             return receiver
-        case "equalTo":
+        case "equalTo:":
             if not isinstance(args[0], SOLString):
                 return _FALSE
             return get_bool(receiver.value == args[0].value)
         case "asString":
             return receiver
         case "asInteger":
-            # Returns Integer if easily convertible, nil otherwise (spec)
             try:
                 return SOLInteger(int(receiver.value))
             except ValueError:
                 return _NIL
-        case "concatenateWith":
-            # Returns nil if argument is not a String or subclass
+        case "concatenateWith:":
             if not isinstance(args[0], SOLString):
                 return _NIL
             return SOLString(receiver.value + args[0].value)
         case "length":
             return SOLInteger(len(receiver.value))
-        case "startsWith:endsBefore":
+        case "startsWith:endsBefore:":
             return _string_substring(receiver, args)
     return None
 
@@ -306,9 +314,8 @@ def _string_substring(receiver: SOLString, args: list[SOLObject]) -> SOLObject:
         return _NIL
     if end - start <= 0:
         return SOLString("")
-    # Convert to 0-based indexing
     py_start = start - 1
-    py_end = end - 1  # endsBefore is exclusive in spec (char BEFORE this index)
+    py_end = end - 1
     return SOLString(receiver.value[py_start:py_end])
 
 
@@ -348,7 +355,6 @@ def _dispatch_bool(
         case "not":
             return get_bool(not receiver.value)
         case "and:":
-            # Short-circuit: if false, don't evaluate block
             _assert_block(args[0], selector, expected_arity=0)
             if not receiver.value:
                 return _FALSE
@@ -360,7 +366,6 @@ def _dispatch_bool(
                 )
             return result
         case "or:":
-            # Short-circuit: if true, don't evaluate block
             _assert_block(args[0], selector, expected_arity=0)
             if receiver.value:
                 return _TRUE
@@ -371,7 +376,7 @@ def _dispatch_bool(
                     message="'or:' block must return a Bool",
                 )
             return result
-        case "equalTo":
+        case "equalTo:":
             if not isinstance(args[0], SOLBool):
                 return _FALSE
             return get_bool(receiver.value == args[0].value)
@@ -397,7 +402,7 @@ def _dispatch_nil(receiver: SOLNil, selector: str, args: list[SOLObject]) -> SOL
             return _FALSE
         case "asString":
             return SOLString("nil")
-        case "equalTo":
+        case "equalTo:":
             return get_bool(isinstance(args[0], SOLNil))
         case "print":
             print("nil", end="")
@@ -416,16 +421,13 @@ def _dispatch_block(
     invoke_block: BlockInvoker,
 ) -> SOLObject | None:
     expected_arity = len(receiver.block_def.parameters)  # type: ignore[union-attr]
-    expected_selector = "value" if expected_arity == 0 else ":".join(["value"] * expected_arity)
+    expected_selector = "value" if expected_arity == 0 else ":".join(["value"] * expected_arity) + ":"
 
     match selector:
         case s if s == expected_selector:
-            # Correct value / value: / value:value: call
             return invoke_block(receiver, args)
 
         case "whileTrue:":
-            # [condBlock] whileTrue: [bodyBlock]
-            # condBlock must be zero-arity, bodyBlock must be zero-arity
             _assert_block(args[0], selector, expected_arity=0)
             result: SOLObject = _NIL
             while True:
@@ -456,7 +458,6 @@ def _dispatch_block(
             return result
 
         case s if s.startswith("value"):
-            # value selector with wrong arity
             raise InterpreterError(
                 error_code=ErrorCode.INT_DNU,
                 message=(
@@ -485,15 +486,11 @@ def _instantiate(class_name: str) -> SOLObject:
         case "Nil":
             return _NIL
         case "Block":
-            # Block new → empty zero-arity block (spec: Block new creates empty value block)
-            # We create a minimal SOLBlock with no block_def — handle carefully
-            # For now return a placeholder; real usage is rare
             raise InterpreterError(
                 error_code=ErrorCode.INT_OTHER,
                 message="Block new is not yet supported",
             )
         case _:
-            # User-defined class
             from interpreter.sol_objects import SOLInstance
             return SOLInstance(class_name)
 
@@ -520,17 +517,14 @@ def _copy_from(class_name: str, obj: SOLObject) -> SOLObject:
                 )
             new_obj = SOLString(obj.value)
         case "Nil":
-            # Nil is singleton — from: always returns the same nil
             return _NIL
         case "True":
             return _TRUE
         case "False":
             return _FALSE
         case _:
-            # User-defined subclass — must be compatible with any built-in parent
             new_obj = _instantiate_subclass(class_name, obj)
 
-    # Shallow copy of instance attributes (spec: mělká kopie)
     new_obj.attributes = dict(obj.attributes)
     return new_obj
 
@@ -540,8 +534,6 @@ def _instantiate_subclass(class_name: str, obj: SOLObject) -> SOLObject:
     For user-defined subclasses of built-in types (e.g. Factorial(Integer)).
     Copies the internal value from obj.
     """
-
-    # Check compatibility: if obj has an internal value, the new class must too
     if isinstance(obj, SOLInteger):
         new_instance = SOLInteger(obj.value)
         new_instance.class_name = class_name
@@ -595,7 +587,7 @@ def _assert_integer(arg: SOLObject, selector: str) -> None:
     """Raise INT_OTHER 52 if argument is not SOLInteger."""
     if not isinstance(arg, SOLInteger):
         raise InterpreterError(
-            error_code=ErrorCode.INT_OTHER,  # ← ZMENA: 52 namiesto 51
+            error_code=ErrorCode.INT_OTHER,
             message=f"'{selector}' expects Integer argument, got '{arg.class_name}'",
         )
 
