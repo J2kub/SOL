@@ -19,7 +19,7 @@ COPY typescript/tester/package*.json ./
 RUN npm ci
 COPY typescript/tester/src ./src
 COPY typescript/tester/tsconfig.json ./
-RUN tsc --project tsconfig.json
+RUN ./node_modules/.bin/tsc --project tsconfig.json
 
 # ── build-test: alias pre build (pre spätnu kompatibilitu) ──────────
 FROM build AS build-test
