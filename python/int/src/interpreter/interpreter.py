@@ -9,10 +9,13 @@ Author:
 
 import logging
 from pathlib import Path
-from typing import TextIO, cast
+from typing import TYPE_CHECKING, TextIO
 
-from lxml import etree
-from lxml.etree import ParseError
+if TYPE_CHECKING:
+    from lxml.etree import _ElementTree
+
+from lxml import etree  # type: ignore[import-untyped]
+from lxml.etree import ParseError  # type: ignore[import-untyped]
 from pydantic import ValidationError
 
 from interpreter.builtins import dispatch_builtin, dispatch_class_message
@@ -77,9 +80,7 @@ class Interpreter:
                 error_code=ErrorCode.INT_XML, message="Error parsing input XML"
             ) from e
         try:
-            self.current_program = cast(
-                Program, Program.from_xml_tree(xml_tree.getroot())
-            )
+            self.current_program = Program.from_xml_tree(xml_tree.getroot())
         except ValidationError as e:
             raise InterpreterError(
                 error_code=ErrorCode.INT_STRUCTURE, message="Invalid SOL-XML structure"
