@@ -9,10 +9,7 @@ Author:
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, TextIO
-
-if TYPE_CHECKING:
-    from lxml.etree import _ElementTree
+from typing import TextIO
 
 from lxml import etree  # type: ignore[import-untyped]
 from lxml.etree import ParseError  # type: ignore[import-untyped]
