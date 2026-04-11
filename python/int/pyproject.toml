@@ -3,7 +3,7 @@ name = "sol26-interpreter"
 version = "1.0.0"
 description = "An interpreter for SOL26, a simple object language."
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "pydantic~=2.12.5",
     "pydantic-xml[lxml]~=2.19.0",
@@ -12,12 +12,12 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "mypy~=1.19.1",
+    "mypy~=1.20.0",
     "ruff~=0.14.4",
 ]
 
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.12"
 strict = true
 pretty = true
 show_error_context = true
@@ -33,7 +33,7 @@ plugins = [
 [tool.ruff]
 src = ["src"]
 line-length = 99
-target-version = "py314"
+target-version = "py312"
 show-fixes = true
 output-format = "full"
 
