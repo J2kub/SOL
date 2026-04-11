@@ -11,9 +11,8 @@ if TYPE_CHECKING:
     from interpreter.environment import Environment
 
 
-
 class SOLObject(ABC):
-    """Základná trieda pre všetky SOL26 objekty."""
+    """Base class for all SOL26 runtime objects."""
 
     def __init__(self, class_name: str) -> None:
         """Initialize the object with a class name."""
@@ -22,23 +21,23 @@ class SOLObject(ABC):
 
     @abstractmethod
     def sol_as_string(self) -> str:
-        """Returns string representation of this object."""
+        """Return the SOL26 string representation of this object."""
 
 
 class SOLNil(SOLObject):
-    """Reprezentuje nil - singleton."""
+    """Represents the nil singleton."""
 
     def __init__(self) -> None:
         """Initialize Nil."""
         super().__init__("Nil")
 
     def sol_as_string(self) -> str:
-        """Returns 'nil'."""
+        """Return 'nil'."""
         return "nil"
 
 
 class SOLBool(SOLObject):
-    """Reprezentuje true/false - singletons."""
+    """Represents the true/false singletons."""
 
     def __init__(self, value: bool) -> None:
         """Initialize Bool with a value."""
@@ -46,12 +45,12 @@ class SOLBool(SOLObject):
         self.value = value
 
     def sol_as_string(self) -> str:
-        """Returns 'true' or 'false'."""
+        """Return 'true' or 'false'."""
         return "true" if self.value else "false"
 
 
 class SOLInteger(SOLObject):
-    """Reprezentuje celé číslo."""
+    """Represents an integer value."""
 
     def __init__(self, value: int) -> None:
         """Initialize Integer with a value."""
@@ -59,12 +58,12 @@ class SOLInteger(SOLObject):
         self.value = value
 
     def sol_as_string(self) -> str:
-        """Returns number as string."""
+        """Return the integer as a string."""
         return str(self.value)
 
 
 class SOLString(SOLObject):
-    """Reprezentuje retazec (string)."""
+    """Represents a string value."""
 
     def __init__(self, value: str) -> None:
         """Initialize String with a value."""
@@ -72,11 +71,12 @@ class SOLString(SOLObject):
         self.value = value
 
     def sol_as_string(self) -> str:
-        """Returns the string value."""
+        """Return the string value."""
         return self.value
 
+
 class SOLBlock(SOLObject):
-    """Reprezentuje blok kódu (closure)."""
+    """Represents a block (closure) capturing its lexical environment."""
 
     def __init__(
         self,
@@ -91,25 +91,27 @@ class SOLBlock(SOLObject):
         self.self_ref = self_ref
 
     def sol_as_string(self) -> str:
-        """Returns string representation of block."""
+        """Return a string representation of this block."""
         return "a Block"
 
 
 class SOLInstance(SOLObject):
-    """Reprezentuje inštanciu užívateľsky definovanej triedy."""
+    """Represents an instance of a user-defined class."""
 
     def __init__(self, class_name: str) -> None:
-        """Initialize instance of a user-defined class."""
+        """Initialize an instance of a user-defined class."""
         super().__init__(class_name)
 
     def sol_as_string(self) -> str:
-        """Returns string representation of instance."""
+        """Return a string representation of this instance."""
         return f"a {self.class_name}"
 
+
 class SOLClassRef(SOLObject):
-    """Reprezentuje triedu ako príjemcu správy (pre new, from:)."""
+    """Represents a class used as a message receiver (for new, from:)."""
 
     def __init__(self, class_name: str) -> None:
+        """Initialize a class reference for the given class name."""
         super().__init__("class")
         self.ref_class_name = class_name
 
