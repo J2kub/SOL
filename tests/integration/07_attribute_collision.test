@@ -1,0 +1,13 @@
++++errors
+***Attribute name collides with method - error 54
+!I! 54
+
+<?xml version="1.0" encoding="UTF-8"?>
+<program language="SOL26" description="Attribute collision">
+  <class name="Main" parent="Object">
+    <attribute name="run"/>
+    <method selector="run">
+      <block arity="0"/>
+    </method>
+  </class>
+</program>
