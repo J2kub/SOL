@@ -1,9 +1,10 @@
-﻿"""SOL26 built-in method dispatch."""
+"""SOL26 built-in method dispatch."""
 
 from __future__ import annotations
 
 import sys
 from collections.abc import Callable
+from typing import cast
 
 from interpreter.error_codes import ErrorCode
 from interpreter.exceptions import InterpreterError
@@ -149,26 +150,28 @@ def _dispatch_object(
             return receiver
         case "ifNil:":
             _assert_block(args[0], selector, expected_arity=0)
+            block_arg = cast(SOLBlock, args[0])
             if isinstance(receiver, SOLNil):
-                return invoke_block(args[0], [])  # type: ignore[arg-type]
+                return invoke_block(block_arg, [])
             return receiver
         case "ifNotNil:":
             _assert_block(args[0], selector, expected_arity=1)
+            block_arg = cast(SOLBlock, args[0])
             if not isinstance(receiver, SOLNil):
-                return invoke_block(args[0], [receiver])  # type: ignore[arg-type]
+                return invoke_block(block_arg, [receiver])
             return _NIL
         case "ifNil:ifNotNil:":
             if isinstance(receiver, SOLNil):
                 _assert_block(args[0], selector, expected_arity=0)
-                return invoke_block(args[0], [])  # type: ignore[arg-type]
+                return invoke_block(cast(SOLBlock, args[0]), [])
             _assert_block(args[1], selector, expected_arity=1)
-            return invoke_block(args[1], [receiver])  # type: ignore[arg-type]
+            return invoke_block(cast(SOLBlock, args[1]), [receiver])
         case "ifNotNil:ifNil:":
             if not isinstance(receiver, SOLNil):
                 _assert_block(args[0], selector, expected_arity=1)
-                return invoke_block(args[0], [receiver])  # type: ignore[arg-type]
+                return invoke_block(cast(SOLBlock, args[0]), [receiver])
             _assert_block(args[1], selector, expected_arity=0)
-            return invoke_block(args[1], [])  # type: ignore[arg-type]
+            return invoke_block(cast(SOLBlock, args[1]), [])
     return None
 
 
@@ -281,8 +284,8 @@ def _dispatch_integer(
                     error_code=ErrorCode.INT_DNU,
                     message=f"'{selector}' expects Block argument, got '{block.class_name}'",
                 )
-
-            arity = len(block.block_def.parameters)  # type: ignore[union-attr]
+            assert block.block_def is not None
+            arity = len(block.block_def.parameters)
             result: SOLObject = _NIL
 
             if receiver.value <= 0:
@@ -368,32 +371,32 @@ def _dispatch_bool(
         case "ifTrue:":
             _assert_block(args[0], selector, expected_arity=0)
             if receiver.value:
-                return invoke_block(args[0], [])  # type: ignore[arg-type]
+                return invoke_block(cast(SOLBlock, args[0]), [])
             return _NIL
         case "ifFalse:":
             _assert_block(args[0], selector, expected_arity=0)
             if not receiver.value:
-                return invoke_block(args[0], [])  # type: ignore[arg-type]
+                return invoke_block(cast(SOLBlock, args[0]), [])
             return _NIL
         case "ifTrue:ifFalse:":
             _assert_block(args[0], selector, expected_arity=0)
             _assert_block(args[1], selector, expected_arity=0)
             if receiver.value:
-                return invoke_block(args[0], [])  # type: ignore[arg-type]
-            return invoke_block(args[1], [])  # type: ignore[arg-type]
+                return invoke_block(cast(SOLBlock, args[0]), [])
+            return invoke_block(cast(SOLBlock, args[1]), [])
         case "ifFalse:ifTrue:":
             _assert_block(args[0], selector, expected_arity=0)
             _assert_block(args[1], selector, expected_arity=0)
             if not receiver.value:
-                return invoke_block(args[0], [])  # type: ignore[arg-type]
-            return invoke_block(args[1], [])  # type: ignore[arg-type]
+                return invoke_block(cast(SOLBlock, args[0]), [])
+            return invoke_block(cast(SOLBlock, args[1]), [])
         case "not":
             return get_bool(not receiver.value)
         case "and:" | "&":
             _assert_block(args[0], selector, expected_arity=0)
             if not receiver.value:
                 return _FALSE
-            result = invoke_block(args[0], [])  # type: ignore[arg-type]
+            result = invoke_block(cast(SOLBlock, args[0]), [])
             if not isinstance(result, SOLBool):
                 raise InterpreterError(
                     error_code=ErrorCode.INT_OTHER,
@@ -404,7 +407,7 @@ def _dispatch_bool(
             _assert_block(args[0], selector, expected_arity=0)
             if receiver.value:
                 return _TRUE
-            result = invoke_block(args[0], [])  # type: ignore[arg-type]
+            result = invoke_block(cast(SOLBlock, args[0]), [])
             if not isinstance(result, SOLBool):
                 raise InterpreterError(
                     error_code=ErrorCode.INT_OTHER,
@@ -455,7 +458,8 @@ def _dispatch_block(
     args: list[SOLObject],
     invoke_block: BlockInvoker,
 ) -> SOLObject | None:
-    expected_arity = len(receiver.block_def.parameters)  # type: ignore[union-attr]
+    assert receiver.block_def is not None
+    expected_arity = len(receiver.block_def.parameters)
     expected_selector = "value" if expected_arity == 0 else ":".join(["value"] * expected_arity) + ":"
 
     match selector:
@@ -474,7 +478,7 @@ def _dispatch_block(
                     )
                 if not cond.value:
                     break
-                result = invoke_block(args[0], [])  # type: ignore[arg-type]
+                result = invoke_block(cast(SOLBlock, args[0]), [])
             return result
 
         case "whileFalse:":
@@ -489,7 +493,7 @@ def _dispatch_block(
                     )
                 if cond.value:
                     break
-                result = invoke_block(args[0], [])  # type: ignore[arg-type]
+                result = invoke_block(cast(SOLBlock, args[0]), [])
             return result
 
         case s if s.startswith("value"):
@@ -526,7 +530,6 @@ def _instantiate(class_name: str) -> SOLObject:
                 message="Block new is not yet supported",
             )
         case _:
-            from interpreter.sol_objects import SOLInstance
             return SOLInstance(class_name)
 
 
@@ -618,7 +621,8 @@ def _assert_block(obj: SOLObject, selector: str, expected_arity: int) -> None:
             error_code=ErrorCode.INT_DNU,
             message=f"'{selector}' expects Block argument, got '{obj.class_name}'",
         )
-    actual = len(obj.block_def.parameters)  # type: ignore[union-attr]
+    assert obj.block_def is not None
+    actual = len(obj.block_def.parameters)
     if actual != expected_arity:
         raise InterpreterError(
             error_code=ErrorCode.INT_DNU,
