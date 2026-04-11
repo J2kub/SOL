@@ -49,7 +49,8 @@ def dispatch_builtin(
 ) -> SOLObject | None:
     """
     Try to dispatch a message on a built-in object.
-    Returns SOLObject on success, None if the selector is unknown (→ INT_DNU in interpreter).
+
+    Returns SOLObject on success, None if the selector is unknown.
     """
     result = _dispatch_object(receiver, selector, args, invoke_block)
     if result is not None:
@@ -111,7 +112,10 @@ def dispatch_class_message(
         case _:
             raise InterpreterError(
                 error_code=ErrorCode.INT_DNU,
-                message=f"Class '{class_name}' does not understand class message '{selector}'",
+                message=(
+                    f"Class '{class_name}' does not understand "
+                    f"class message '{selector}'"
+                ),
             )
 
 
@@ -185,18 +189,30 @@ def _dispatch_integer(
     args: list[SOLObject],
     invoke_block: BlockInvoker,
 ) -> SOLObject | None:
+    """Dispatch messages understood by Integer."""
+    result = _dispatch_integer_arithmetic(receiver, selector, args)
+    if result is not None:
+        return result
+    return _dispatch_integer_other(receiver, selector, args, invoke_block)
+
+
+def _dispatch_integer_arithmetic(
+    receiver: SOLInteger,
+    selector: str,
+    args: list[SOLObject],
+) -> SOLObject | None:
+    """Arithmetic and comparison messages for Integer."""
     match selector:
-        # Verbose selectors
-        case "plus:":
+        case "plus:" | "+":
             _assert_integer(args[0], selector)
             return SOLInteger(receiver.value + _int(args[0]))
-        case "minus:":
+        case "minus:" | "-":
             _assert_integer(args[0], selector)
             return SOLInteger(receiver.value - _int(args[0]))
-        case "multiplyBy:":
+        case "multiplyBy:" | "*":
             _assert_integer(args[0], selector)
             return SOLInteger(receiver.value * _int(args[0]))
-        case "divBy:":
+        case "divBy:" | "//":
             _assert_integer(args[0], selector)
             if _int(args[0]) == 0:
                 raise InterpreterError(
@@ -204,7 +220,7 @@ def _dispatch_integer(
                     message="Division by zero",
                 )
             return SOLInteger(receiver.value // _int(args[0]))
-        case "modBy:":
+        case "modBy:" | "\\\\":
             _assert_integer(args[0], selector)
             if _int(args[0]) == 0:
                 raise InterpreterError(
@@ -212,64 +228,37 @@ def _dispatch_integer(
                     message="Modulo by zero",
                 )
             return SOLInteger(receiver.value % _int(args[0]))
-        case "greaterThan:":
+        case "greaterThan:" | ">":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value > _int(args[0]))
-        case "lessThan:":
+        case "lessThan:" | "<":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value < _int(args[0]))
-        case "greaterOrEqualTo:":
+        case "greaterOrEqualTo:" | ">=":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value >= _int(args[0]))
-        case "lessOrEqualTo:":
+        case "lessOrEqualTo:" | "<=":
             _assert_integer(args[0], selector)
             return get_bool(receiver.value <= _int(args[0]))
         case "equalTo:":
             if not isinstance(args[0], SOLInteger):
                 return _FALSE
             return get_bool(receiver.value == _int(args[0]))
-        # Smalltalk operator selectors
-        case "+":
-            _assert_integer(args[0], selector)
-            return SOLInteger(receiver.value + _int(args[0]))
-        case "-":
-            _assert_integer(args[0], selector)
-            return SOLInteger(receiver.value - _int(args[0]))
-        case "*":
-            _assert_integer(args[0], selector)
-            return SOLInteger(receiver.value * _int(args[0]))
-        case "//":
-            _assert_integer(args[0], selector)
-            if _int(args[0]) == 0:
-                raise InterpreterError(
-                    error_code=ErrorCode.INT_INVALID_ARG,
-                    message="Division by zero",
-                )
-            return SOLInteger(receiver.value // _int(args[0]))
-        case "\\\\":
-            _assert_integer(args[0], selector)
-            if _int(args[0]) == 0:
-                raise InterpreterError(
-                    error_code=ErrorCode.INT_INVALID_ARG,
-                    message="Modulo by zero",
-                )
-            return SOLInteger(receiver.value % _int(args[0]))
-        case "<":
-            _assert_integer(args[0], selector)
-            return get_bool(receiver.value < _int(args[0]))
-        case ">":
-            _assert_integer(args[0], selector)
-            return get_bool(receiver.value > _int(args[0]))
-        case "<=":
-            _assert_integer(args[0], selector)
-            return get_bool(receiver.value <= _int(args[0]))
-        case ">=":
-            _assert_integer(args[0], selector)
-            return get_bool(receiver.value >= _int(args[0]))
         case "~=":
             if not isinstance(args[0], SOLInteger):
                 return _TRUE
             return get_bool(receiver.value != _int(args[0]))
+    return None
+
+
+def _dispatch_integer_other(
+    receiver: SOLInteger,
+    selector: str,
+    args: list[SOLObject],
+    invoke_block: BlockInvoker,
+) -> SOLObject | None:
+    """Non-arithmetic messages for Integer (conversion, repetition)."""
+    match selector:
         case "asString" | "printString":
             return SOLString(str(receiver.value))
         case "asInteger":
@@ -278,34 +267,43 @@ def _dispatch_integer(
             print(receiver.sol_as_string(), end="")
             return receiver
         case "timesRepeat:":
-            block = args[0]
-            if not isinstance(block, SOLBlock):
-                raise InterpreterError(
-                    error_code=ErrorCode.INT_DNU,
-                    message=f"'{selector}' expects Block argument, got '{block.class_name}'",
-                )
-            assert block.block_def is not None
-            arity = len(block.block_def.parameters)
-            result: SOLObject = _NIL
-
-            if receiver.value <= 0:
-                return result
-
-            if arity == 0:
-                for _ in range(receiver.value):
-                    result = invoke_block(block, [])
-                return result
-
-            if arity == 1:
-                for i in range(1, receiver.value + 1):
-                    result = invoke_block(block, [SOLInteger(i)])
-                return result
-
-            raise InterpreterError(
-                error_code=ErrorCode.INT_DNU,
-                message=f"'{selector}' expects block with arity 0 or 1, got arity {arity}",
-            )
+            return _integer_times_repeat(receiver, args, invoke_block)
     return None
+
+
+def _integer_times_repeat(
+    receiver: SOLInteger,
+    args: list[SOLObject],
+    invoke_block: BlockInvoker,
+) -> SOLObject:
+    """Implement Integer>>timesRepeat: for arity 0 and 1 blocks."""
+    block = args[0]
+    if not isinstance(block, SOLBlock):
+        raise InterpreterError(
+            error_code=ErrorCode.INT_DNU,
+            message=f"'timesRepeat:' expects Block argument, got '{block.class_name}'",
+        )
+    assert block.block_def is not None
+    arity = len(block.block_def.parameters)
+    result: SOLObject = _NIL
+
+    if receiver.value <= 0:
+        return result
+
+    if arity == 0:
+        for _ in range(receiver.value):
+            result = invoke_block(block, [])
+        return result
+
+    if arity == 1:
+        for i in range(1, receiver.value + 1):
+            result = invoke_block(block, [SOLInteger(i)])
+        return result
+
+    raise InterpreterError(
+        error_code=ErrorCode.INT_DNU,
+        message=f"'timesRepeat:' expects block with arity 0 or 1, got arity {arity}",
+    )
 
 
 # ------------------------------------------------------------------
@@ -317,6 +315,7 @@ def _dispatch_string(
     selector: str,
     args: list[SOLObject],
 ) -> SOLObject | None:
+    """Dispatch messages understood by String."""
     match selector:
         case "print" | "printNl":
             print(receiver.value, end="")
@@ -344,6 +343,7 @@ def _dispatch_string(
 
 
 def _string_substring(receiver: SOLString, args: list[SOLObject]) -> SOLObject:
+    """Implement String>>startsWith:endsBefore: (1-based, end-exclusive)."""
     if not isinstance(args[0], SOLInteger) or not isinstance(args[1], SOLInteger):
         return _NIL
     start = args[0].value
@@ -352,9 +352,7 @@ def _string_substring(receiver: SOLString, args: list[SOLObject]) -> SOLObject:
         return _NIL
     if end - start <= 0:
         return SOLString("")
-    py_start = start - 1
-    py_end = end - 1
-    return SOLString(receiver.value[py_start:py_end])
+    return SOLString(receiver.value[start - 1 : end - 1])
 
 
 # ------------------------------------------------------------------
@@ -367,6 +365,20 @@ def _dispatch_bool(
     args: list[SOLObject],
     invoke_block: BlockInvoker,
 ) -> SOLObject | None:
+    """Dispatch messages understood by True/False."""
+    result = _dispatch_bool_conditionals(receiver, selector, args, invoke_block)
+    if result is not None:
+        return result
+    return _dispatch_bool_other(receiver, selector, args, invoke_block)
+
+
+def _dispatch_bool_conditionals(
+    receiver: SOLBool,
+    selector: str,
+    args: list[SOLObject],
+    invoke_block: BlockInvoker,
+) -> SOLObject | None:
+    """ifTrue:/ifFalse: and combined variants for Bool."""
     match selector:
         case "ifTrue:":
             _assert_block(args[0], selector, expected_arity=0)
@@ -390,6 +402,17 @@ def _dispatch_bool(
             if not receiver.value:
                 return invoke_block(cast(SOLBlock, args[0]), [])
             return invoke_block(cast(SOLBlock, args[1]), [])
+    return None
+
+
+def _dispatch_bool_other(
+    receiver: SOLBool,
+    selector: str,
+    args: list[SOLObject],
+    invoke_block: BlockInvoker,
+) -> SOLObject | None:
+    """not, and:, or:, equality and printing for Bool."""
+    match selector:
         case "not":
             return get_bool(not receiver.value)
         case "and:" | "&":
@@ -432,7 +455,12 @@ def _dispatch_bool(
 # Nil
 # ------------------------------------------------------------------
 
-def _dispatch_nil(receiver: SOLNil, selector: str, args: list[SOLObject]) -> SOLObject | None:
+def _dispatch_nil(
+    receiver: SOLNil,
+    selector: str,
+    args: list[SOLObject],
+) -> SOLObject | None:
+    """Dispatch messages understood by Nil."""
     match selector:
         case "isNil":
             return _TRUE
@@ -458,9 +486,11 @@ def _dispatch_block(
     args: list[SOLObject],
     invoke_block: BlockInvoker,
 ) -> SOLObject | None:
+    """Dispatch messages understood by Block."""
     assert receiver.block_def is not None
     expected_arity = len(receiver.block_def.parameters)
-    expected_selector = "value" if expected_arity == 0 else ":".join(["value"] * expected_arity) + ":"
+    n = expected_arity
+    expected_selector = "value" if n == 0 else ":".join(["value"] * n) + ":"
 
     match selector:
         case s if s == expected_selector:
@@ -468,33 +498,11 @@ def _dispatch_block(
 
         case "whileTrue:":
             _assert_block(args[0], selector, expected_arity=0)
-            result: SOLObject = _NIL
-            while True:
-                cond = invoke_block(receiver, [])
-                if not isinstance(cond, SOLBool):
-                    raise InterpreterError(
-                        error_code=ErrorCode.INT_OTHER,
-                        message="'whileTrue:' condition block must return Bool",
-                    )
-                if not cond.value:
-                    break
-                result = invoke_block(cast(SOLBlock, args[0]), [])
-            return result
+            return _while_loop(receiver, cast(SOLBlock, args[0]), invoke_block, while_true=True)
 
         case "whileFalse:":
             _assert_block(args[0], selector, expected_arity=0)
-            result = _NIL
-            while True:
-                cond = invoke_block(receiver, [])
-                if not isinstance(cond, SOLBool):
-                    raise InterpreterError(
-                        error_code=ErrorCode.INT_OTHER,
-                        message="'whileFalse:' condition block must return Bool",
-                    )
-                if cond.value:
-                    break
-                result = invoke_block(cast(SOLBlock, args[0]), [])
-            return result
+            return _while_loop(receiver, cast(SOLBlock, args[0]), invoke_block, while_true=False)
 
         case s if s.startswith("value"):
             raise InterpreterError(
@@ -505,6 +513,29 @@ def _dispatch_block(
                 ),
             )
     return None
+
+
+def _while_loop(
+    cond_block: SOLBlock,
+    body_block: SOLBlock,
+    invoke_block: BlockInvoker,
+    *,
+    while_true: bool,
+) -> SOLObject:
+    """Shared implementation for whileTrue: and whileFalse:."""
+    selector = "whileTrue:" if while_true else "whileFalse:"
+    result: SOLObject = _NIL
+    while True:
+        cond = invoke_block(cond_block, [])
+        if not isinstance(cond, SOLBool):
+            raise InterpreterError(
+                error_code=ErrorCode.INT_OTHER,
+                message=f"'{selector}' condition block must return Bool",
+            )
+        if cond.value != while_true:
+            break
+        result = invoke_block(body_block, [])
+    return result
 
 
 # ------------------------------------------------------------------
@@ -534,6 +565,7 @@ def _instantiate(class_name: str) -> SOLObject:
 
 
 def _copy_from(class_name: str, obj: SOLObject) -> SOLObject:
+    """Implement ClassName from: obj — shallow-copy with optional type coercion."""
     match class_name:
         case "Integer":
             if not isinstance(obj, SOLInteger):
@@ -563,11 +595,12 @@ def _copy_from(class_name: str, obj: SOLObject) -> SOLObject:
 
 
 def _instantiate_subclass(class_name: str, obj: SOLObject) -> SOLObject:
+    """Create a subclass instance from an existing object (from: on user-defined class)."""
     if isinstance(obj, SOLInteger):
         new_instance = SOLInteger(obj.value)
         new_instance.class_name = class_name
         return new_instance
-    elif isinstance(obj, SOLString):
+    if isinstance(obj, SOLString):
         raise InterpreterError(
             error_code=ErrorCode.INT_INVALID_ARG,
             message=(
@@ -575,7 +608,7 @@ def _instantiate_subclass(class_name: str, obj: SOLObject) -> SOLObject:
                 f"incompatible internal attributes (error 53)"
             ),
         )
-    elif isinstance(obj, SOLInstance):
+    if isinstance(obj, SOLInstance):
         return SOLInstance(class_name)
 
     raise InterpreterError(
@@ -592,6 +625,7 @@ def _instantiate_subclass(class_name: str, obj: SOLObject) -> SOLObject:
 # ------------------------------------------------------------------
 
 def _sol_equal(a: SOLObject, b: SOLObject) -> bool:
+    """Value equality for built-in types; identity fallback for instances."""
     if isinstance(a, SOLInteger) and isinstance(b, SOLInteger):
         return a.value == b.value
     if isinstance(a, SOLString) and isinstance(b, SOLString):
@@ -608,6 +642,7 @@ def _sol_equal(a: SOLObject, b: SOLObject) -> bool:
 # ------------------------------------------------------------------
 
 def _assert_integer(arg: SOLObject, selector: str) -> None:
+    """Raise INT_OTHER if arg is not an Integer."""
     if not isinstance(arg, SOLInteger):
         raise InterpreterError(
             error_code=ErrorCode.INT_OTHER,
@@ -616,6 +651,7 @@ def _assert_integer(arg: SOLObject, selector: str) -> None:
 
 
 def _assert_block(obj: SOLObject, selector: str, expected_arity: int) -> None:
+    """Raise INT_DNU if obj is not a Block or has the wrong arity."""
     if not isinstance(obj, SOLBlock):
         raise InterpreterError(
             error_code=ErrorCode.INT_DNU,
@@ -634,5 +670,6 @@ def _assert_block(obj: SOLObject, selector: str, expected_arity: int) -> None:
 
 
 def _int(obj: SOLObject) -> int:
+    """Unwrap a guaranteed-Integer SOLObject to a Python int."""
     assert isinstance(obj, SOLInteger)
     return obj.value
