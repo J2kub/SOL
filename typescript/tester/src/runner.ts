@@ -21,8 +21,10 @@ import {
 // Paths to external tools
 // ------------------------------------------------------------------
 
-const INT_DIR = "/int";
-const SOLINT_SCRIPT = path.join("/int", "src", "solint.py");
+// SOL_INT_DIR: root of the interpreter package (default: /int for Docker)
+const INT_DIR = process.env["SOL_INT_DIR"] ?? "/int";
+const SOLINT_SCRIPT = path.join(INT_DIR, "src", "solint.py");
+const INT_SRC_DIR = path.join(INT_DIR, "src");
 
 const INTERPRETER_CMD = process.env["SOL_INTERPRETER"] ?? "python";
 const INTERPRETER_ARGS = process.env["SOL_INTERPRETER_ARGS"]?.split(" ") ?? [SOLINT_SCRIPT];
@@ -48,7 +50,7 @@ function runProcess(
     cwd,
     env: {
       ...process.env,
-      PYTHONPATH: path.join(INT_DIR, "src"),
+      PYTHONPATH: INT_SRC_DIR,
     },
   });
 
@@ -107,7 +109,7 @@ function runSingleTest(test: TestCaseDefinition): TestCaseReport | UnexecutedRea
   let parserStderr: string | null = null;
 
   try {
-    // ── Phase 1: Parser (PARSE_ONLY or COMBINED) ──────────────────
+    // ── Phase 1: Parser (PARSE_ONLY or COMBINED) ──────────────
     if (test.test_type === TestCaseType.PARSE_ONLY || test.test_type === TestCaseType.COMBINED) {
       const source = fs.readFileSync(test.test_source_path, "utf-8");
       const sourceOnly = extractSource(source);
@@ -148,17 +150,16 @@ function runSingleTest(test: TestCaseDefinition): TestCaseReport | UnexecutedRea
       xmlPath = writeTempSource(sourceOnly, "xml");
     }
 
-    // ── Phase 2: Interpreter ──────────────────────────────────────
+    // ── Phase 2: Interpreter ────────────────────────────
     if (xmlPath === null) {
       return new UnexecutedReason(UnexecutedReasonCode.OTHER, "No XML file to interpret");
     }
-
 
     const interpResult = runProcess(
       INTERPRETER_CMD,
       [...INTERPRETER_ARGS, xmlPath],
       test.stdin_file,
-      "/int/src"
+      INT_SRC_DIR
     );
 
     const interpCode = interpResult.code;
@@ -178,7 +179,7 @@ function runSingleTest(test: TestCaseDefinition): TestCaseReport | UnexecutedRea
       );
     }
 
-    // ── Phase 3: Diff ─────────────────────────────────────────────
+    // ── Phase 3: Diff ───────────────────────────────────
     let diffOutput: string | null = null;
     if (test.expected_stdout_file !== null && interpCode === 0) {
       diffOutput = runDiff(interpStdout, test.expected_stdout_file);
