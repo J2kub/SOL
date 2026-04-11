@@ -4,7 +4,7 @@ This module contains the main logic of the interpreter.
 IPP: You must definitely modify this file. Bend it to your will.
 
 Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
-Author:
+Author: Jakub Glončák <xgloncj00@stud.fit.vut.cz>
 """
 
 import logging
@@ -87,7 +87,9 @@ class Interpreter:
         """Executes the currently loaded program."""
         logger.info("Executing program")
         if self.current_program is None:
-            raise InterpreterError(error_code=ErrorCode.GENERAL_OTHER, message="No program loaded")
+            raise InterpreterError(
+                error_code=ErrorCode.GENERAL_OTHER, message="No program loaded"
+            )
 
         for class_def in self.current_program.classes:
             self.class_table.register(class_def)
@@ -139,7 +141,9 @@ class Interpreter:
 
         # ── 1. Class message (new, from:, String read) ──────────────────
         if isinstance(receiver, SOLClassRef):
-            return dispatch_class_message(receiver.ref_class_name, selector, resolved_args)
+            return dispatch_class_message(
+                receiver.ref_class_name, selector, resolved_args
+            )
 
         # ── 2. Resolve SuperWrapper ──────────────────────────────────────
         super_start_class: str | None = None
@@ -171,7 +175,9 @@ class Interpreter:
             )
 
         # ── 4. User-defined method lookup ────────────────────────────────
-        start_class = super_start_class if super_start_class else actual_receiver.class_name
+        start_class = (
+            super_start_class if super_start_class else actual_receiver.class_name
+        )
         method_result = self._find_method_with_class(start_class, selector)
 
         if method_result is not None:
@@ -202,7 +208,11 @@ class Interpreter:
             )
 
         # ── 7. Instance attribute setter (one arg, exactly one colon) ───
-        if len(resolved_args) == 1 and selector.endswith(":") and selector.count(":") == 1:
+        if (
+            len(resolved_args) == 1
+            and selector.endswith(":")
+            and selector.count(":") == 1
+        ):
             return self._set_attribute(
                 actual_receiver,
                 selector,
@@ -267,7 +277,9 @@ class Interpreter:
 
         if expr.send is not None:
             recv = self._evaluate_expr(expr.send.receiver, env)
-            send_args = [self._evaluate_expr(arg.expr, env) for arg in expr.send.args]
+            send_args = [
+                self._evaluate_expr(arg.expr, env) for arg in expr.send.args
+            ]
             return self._send_message(recv, expr.send.selector, send_args, env)
 
         raise InterpreterError(
@@ -401,14 +413,16 @@ class Interpreter:
             raise InterpreterError(
                 error_code=ErrorCode.INT_INST_ATTR,
                 message=(
-                    f"Cannot create attribute '{attr_name}': collides with a built-in method"
+                    f"Cannot create attribute '{attr_name}': "
+                    "collides with a built-in method"
                 ),
             )
 
         if use_super:
             parent = self.class_table.get_parent(receiver.class_name)
             collides = (
-                parent is not None and self.class_table.find_method(parent, attr_name) is not None
+                parent is not None
+                and self.class_table.find_method(parent, attr_name) is not None
             )
         else:
             collides = any(

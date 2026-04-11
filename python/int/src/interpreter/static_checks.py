@@ -1,4 +1,9 @@
-"""SOL26 static semantic checks."""
+"""
+SOL26 static semantic checks.
+
+Author: Ondřej Ondryáš <iondryas@fit.vut.cz>
+Author: Jakub Glončák <xgloncj00@stud.fit.vut.cz>
+"""
 
 from __future__ import annotations
 
