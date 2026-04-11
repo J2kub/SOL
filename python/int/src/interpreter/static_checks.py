@@ -264,15 +264,14 @@ def _check_expr_class_literals(
     context: str,
 ) -> None:
     """Recursively check an expression tree for unknown class literals."""
-    if expr.literal is not None:
-        if expr.literal.class_id == "class" and expr.literal.value not in known:
-            raise InterpreterError(
-                error_code=ErrorCode.SEM_UNDEF,
-                message=(
-                    f"Unknown class literal '{expr.literal.value}' "
-                    f"in '{context}'"
-                ),
-            )
+    if expr.literal is not None and expr.literal.class_id == "class" and expr.literal.value not in known:
+        raise InterpreterError(
+            error_code=ErrorCode.SEM_UNDEF,
+            message=(
+                f"Unknown class literal '{expr.literal.value}' "
+                f"in '{context}'"
+            ),
+        )
 
     if expr.block is not None:
         _check_block_class_literals(expr.block, known, context)
