@@ -1,0 +1,22 @@
++++errors
+***Modulo by zero - error 53
+!E! 53
+
+<?xml version="1.0" encoding="UTF-8"?>
+<program language="SOL26" description="Modulo by zero">
+  <class name="Main" parent="Object">
+    <method selector="run">
+      <block arity="0">
+        <assign order="1">
+          <var name="x"/>
+          <expr>
+            <send selector="modBy:">
+              <expr><literal class="Integer" value="7"/></expr>
+              <arg order="1"><expr><literal class="Integer" value="0"/></expr></arg>
+            </send>
+          </expr>
+        </assign>
+      </block>
+    </method>
+  </class>
+</program>

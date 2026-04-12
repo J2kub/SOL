@@ -1,0 +1,36 @@
++++strings
+***String asInteger with non-numeric string returns nil
+!I! 0
+
+<?xml version="1.0" encoding="UTF-8"?>
+<program language="SOL26" description="String asInteger invalid">
+  <class name="Main" parent="Object">
+    <method selector="run">
+      <block arity="0">
+        <assign order="1">
+          <var name="x"/>
+          <expr>
+            <send selector="asInteger">
+              <expr><literal class="String" value="hello"/></expr>
+            </send>
+          </expr>
+        </assign>
+        <assign order="2">
+          <var name="_"/>
+          <expr>
+            <send selector="show:">
+              <expr><literal class="class" value="Transcript"/></expr>
+              <arg order="1">
+                <expr>
+                  <send selector="asString">
+                    <expr><var name="x"/></expr>
+                  </send>
+                </expr>
+              </arg>
+            </send>
+          </expr>
+        </assign>
+      </block>
+    </method>
+  </class>
+</program>

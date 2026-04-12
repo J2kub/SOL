@@ -1,0 +1,17 @@
++++errors
+***Main class missing run method - error 31
+!E! 31
+
+<?xml version="1.0" encoding="UTF-8"?>
+<program language="SOL26" description="Missing run method">
+  <class name="Main" parent="Object">
+    <method selector="foo">
+      <block arity="0">
+        <assign order="1">
+          <var name="_"/>
+          <expr><literal class="Integer" value="1"/></expr>
+        </assign>
+      </block>
+    </method>
+  </class>
+</program>

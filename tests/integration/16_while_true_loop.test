@@ -1,0 +1,67 @@
++++loops
+***whileTrue: loop counting to 3
+!I! 0
+
+<?xml version="1.0" encoding="UTF-8"?>
+<program language="SOL26" description="whileTrue loop">
+  <class name="Main" parent="Object">
+    <method selector="run">
+      <block arity="0">
+        <assign order="1">
+          <var name="i"/>
+          <expr><literal class="Integer" value="0"/></expr>
+        </assign>
+        <assign order="2">
+          <var name="_"/>
+          <expr>
+            <send selector="whileTrue:">
+              <expr>
+                <block arity="0">
+                  <assign order="1">
+                    <var name="_"/>
+                    <expr>
+                      <send selector="lessThan:">
+                        <expr><var name="i"/></expr>
+                        <arg order="1"><expr><literal class="Integer" value="3"/></expr></arg>
+                      </send>
+                    </expr>
+                  </assign>
+                </block>
+              </expr>
+              <arg order="1">
+                <expr>
+                  <block arity="0">
+                    <assign order="1">
+                      <var name="i"/>
+                      <expr>
+                        <send selector="plus:">
+                          <expr><var name="i"/></expr>
+                          <arg order="1"><expr><literal class="Integer" value="1"/></expr></arg>
+                        </send>
+                      </expr>
+                    </assign>
+                    <assign order="2">
+                      <var name="_"/>
+                      <expr>
+                        <send selector="show:">
+                          <expr><literal class="class" value="Transcript"/></expr>
+                          <arg order="1">
+                            <expr>
+                              <send selector="asString">
+                                <expr><var name="i"/></expr>
+                              </send>
+                            </expr>
+                          </arg>
+                        </send>
+                      </expr>
+                    </assign>
+                  </block>
+                </expr>
+              </arg>
+            </send>
+          </expr>
+        </assign>
+      </block>
+    </method>
+  </class>
+</program>
