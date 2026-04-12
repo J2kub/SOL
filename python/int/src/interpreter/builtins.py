@@ -197,7 +197,8 @@ def _dispatch_object_nil_checks(
         case "ifNotNil:":
             block_arg = _assert_block_arity_0_or_1(args[0], selector)
             if not isinstance(receiver, SOLNil):
-                actual_arity = len(block_arg.block_def.parameters)  # type: ignore[union-attr]
+                assert block_arg.block_def is not None
+                actual_arity = len(block_arg.block_def.parameters)
                 invoke_args = [receiver] if actual_arity == 1 else []
                 return invoke_block(block_arg, invoke_args)
             return _NIL
@@ -207,14 +208,16 @@ def _dispatch_object_nil_checks(
                 _assert_block(args[0], selector, expected_arity=0)
                 return invoke_block(cast(SOLBlock, args[0]), [])
             block_arg = _assert_block_arity_0_or_1(args[1], selector)
-            actual_arity = len(block_arg.block_def.parameters)  # type: ignore[union-attr]
+            assert block_arg.block_def is not None
+            actual_arity = len(block_arg.block_def.parameters)
             invoke_args = [receiver] if actual_arity == 1 else []
             return invoke_block(block_arg, invoke_args)
 
         case "ifNotNil:ifNil:":
             if not isinstance(receiver, SOLNil):
                 block_arg = _assert_block_arity_0_or_1(args[0], selector)
-                actual_arity = len(block_arg.block_def.parameters)  # type: ignore[union-attr]
+                assert block_arg.block_def is not None
+                actual_arity = len(block_arg.block_def.parameters)
                 invoke_args = [receiver] if actual_arity == 1 else []
                 return invoke_block(block_arg, invoke_args)
             _assert_block(args[1], selector, expected_arity=0)
