@@ -83,6 +83,26 @@ class Interpreter:
                 error_code=ErrorCode.INT_STRUCTURE, message="Invalid SOL-XML structure"
             ) from e
 
+    def load_program_string(self, source: str) -> None:
+        """
+        Parses the SOL-XML program from a string (e.g. read from stdin) and stores it
+        as the target program for this interpreter.
+        If any program was previously loaded, it is replaced by the new one.
+        """
+        logger.info("Loading program from string input")
+        try:
+            root = etree.fromstring(source.encode())
+        except ParseError as e:
+            raise InterpreterError(
+                error_code=ErrorCode.INT_XML, message="Error parsing input XML"
+            ) from e
+        try:
+            self.current_program = Program.from_xml_tree(root)
+        except ValidationError as e:
+            raise InterpreterError(
+                error_code=ErrorCode.INT_STRUCTURE, message="Invalid SOL-XML structure"
+            ) from e
+
     def execute(self, input_io: TextIO) -> None:
         """Executes the currently loaded program."""
         logger.info("Executing program")
@@ -139,13 +159,13 @@ class Interpreter:
             a.real_obj if isinstance(a, SuperWrapper) else a for a in args
         ]
 
-        # ── 1. Class message (new, from:, String read) ──────────────────
+        # ── 1. Class message (new, from:, String read) ─────────────────────────────
         if isinstance(receiver, SOLClassRef):
             return dispatch_class_message(
                 receiver.ref_class_name, selector, resolved_args
             )
 
-        # ── 2. Resolve SuperWrapper ──────────────────────────────────────
+        # ── 2. Resolve SuperWrapper ────────────────────────────────────────────
         super_start_class: str | None = None
         actual_receiver: SOLObject
 
@@ -161,7 +181,7 @@ class Interpreter:
         else:
             actual_receiver = receiver
 
-        # ── 3. Block value / whileTrue: / whileFalse: ───────────────────
+        # ── 3. Block value / whileTrue: / whileFalse: ───────────────────────────
         # Blocks are only dispatched without super (super on a Block makes no sense)
         if isinstance(actual_receiver, SOLBlock) and super_start_class is None:
             block_result = dispatch_builtin(
@@ -174,7 +194,7 @@ class Interpreter:
                 message=f"Block does not understand '{selector}'",
             )
 
-        # ── 4. User-defined method lookup ────────────────────────────────
+        # ── 4. User-defined method lookup ────────────────────────────────────────
         start_class = (
             super_start_class if super_start_class else actual_receiver.class_name
         )
@@ -191,14 +211,14 @@ class Interpreter:
                 method_env.set(param.name, arg)
             return self._execute_block(method.block, method_env)
 
-        # ── 5. Built-in method (Integer, String, Bool, Nil, Object) ─────
+        # ── 5. Built-in method (Integer, String, Bool, Nil, Object) ─────────────
         builtin_result = dispatch_builtin(
             actual_receiver, selector, resolved_args, self._invoke_block
         )
         if builtin_result is not None:
             return builtin_result
 
-        # ── 6. Instance attribute getter (no args, no colon) ────────────
+        # ── 6. Instance attribute getter (no args, no colon) ──────────────────────
         if not resolved_args and ":" not in selector:
             if selector in actual_receiver.attributes:
                 return actual_receiver.attributes[selector]
@@ -207,7 +227,7 @@ class Interpreter:
                 message=f"'{actual_receiver.class_name}' does not understand '{selector}'",
             )
 
-        # ── 7. Instance attribute setter (one arg, exactly one colon) ───
+        # ── 7. Instance attribute setter (one arg, exactly one colon) ─────────────
         if (
             len(resolved_args) == 1
             and selector.endswith(":")
