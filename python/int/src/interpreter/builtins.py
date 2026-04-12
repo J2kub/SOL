@@ -178,7 +178,14 @@ def _dispatch_object_nil_checks(
     args: list[SOLObject],
     invoke_block: BlockInvoker,
 ) -> SOLObject | None:
-    """ifNil:/ifNotNil: variants for all objects."""
+    """ifNil:/ifNotNil: variants for all objects.
+
+    ifNil:     — block arity 0 only (receiver is nil when fired)
+    ifNotNil:  — block arity 0 OR 1:
+                   arity 1 → called with the receiver as argument
+                   arity 0 → called with no arguments
+    ifNil:ifNotNil: / ifNotNil:ifNil: — same rules per branch
+    """
     match selector:
         case "ifNil:":
             _assert_block(args[0], selector, expected_arity=0)
@@ -186,24 +193,33 @@ def _dispatch_object_nil_checks(
             if isinstance(receiver, SOLNil):
                 return invoke_block(block_arg, [])
             return receiver
+
         case "ifNotNil:":
-            _assert_block(args[0], selector, expected_arity=1)
-            block_arg = cast(SOLBlock, args[0])
+            block_arg = _assert_block_arity_0_or_1(args[0], selector)
             if not isinstance(receiver, SOLNil):
-                return invoke_block(block_arg, [receiver])
+                actual_arity = len(block_arg.block_def.parameters)  # type: ignore[union-attr]
+                invoke_args = [receiver] if actual_arity == 1 else []
+                return invoke_block(block_arg, invoke_args)
             return _NIL
+
         case "ifNil:ifNotNil:":
             if isinstance(receiver, SOLNil):
                 _assert_block(args[0], selector, expected_arity=0)
                 return invoke_block(cast(SOLBlock, args[0]), [])
-            _assert_block(args[1], selector, expected_arity=1)
-            return invoke_block(cast(SOLBlock, args[1]), [receiver])
+            block_arg = _assert_block_arity_0_or_1(args[1], selector)
+            actual_arity = len(block_arg.block_def.parameters)  # type: ignore[union-attr]
+            invoke_args = [receiver] if actual_arity == 1 else []
+            return invoke_block(block_arg, invoke_args)
+
         case "ifNotNil:ifNil:":
             if not isinstance(receiver, SOLNil):
-                _assert_block(args[0], selector, expected_arity=1)
-                return invoke_block(cast(SOLBlock, args[0]), [receiver])
+                block_arg = _assert_block_arity_0_or_1(args[0], selector)
+                actual_arity = len(block_arg.block_def.parameters)  # type: ignore[union-attr]
+                invoke_args = [receiver] if actual_arity == 1 else []
+                return invoke_block(block_arg, invoke_args)
             _assert_block(args[1], selector, expected_arity=0)
             return invoke_block(cast(SOLBlock, args[1]), [])
+
     return None
 
 
@@ -724,6 +740,25 @@ def _assert_block(obj: SOLObject, selector: str, expected_arity: int) -> None:
                 f"'{selector}' expects block with arity {expected_arity}, got arity {actual}"
             ),
         )
+
+
+def _assert_block_arity_0_or_1(obj: SOLObject, selector: str) -> SOLBlock:
+    """Raise INT_DNU if obj is not a Block or has arity other than 0 or 1."""
+    if not isinstance(obj, SOLBlock):
+        raise InterpreterError(
+            error_code=ErrorCode.INT_DNU,
+            message=f"'{selector}' expects Block argument, got '{obj.class_name}'",
+        )
+    assert obj.block_def is not None
+    actual = len(obj.block_def.parameters)
+    if actual not in (0, 1):
+        raise InterpreterError(
+            error_code=ErrorCode.INT_DNU,
+            message=(
+                f"'{selector}' expects block with arity 0 or 1, got arity {actual}"
+            ),
+        )
+    return obj
 
 
 def _int(obj: SOLObject) -> int:
