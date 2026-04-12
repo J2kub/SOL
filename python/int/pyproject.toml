@@ -19,7 +19,6 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["../../tests"]
-python_files = ["conftest.py"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -43,8 +42,6 @@ show-fixes = true
 output-format = "full"
 
 [tool.ruff.lint]
-# Refer to https://docs.astral.sh/ruff/rules/ to see the full list of rules and their codes.
-# Or just follow the error messages ruff gives you. :)
 select = [
     "A",      # builtins
     "BLE001", # blind-except
@@ -92,5 +89,4 @@ docstring-code-format = true
 docstring-code-line-length = 79
 
 [tool.ruff.lint.mccabe]
-# Flag complexity errors (`C901`) whenever the complexity level exceeds 15.
 max-complexity = 15
