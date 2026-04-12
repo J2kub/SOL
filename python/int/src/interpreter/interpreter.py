@@ -9,7 +9,7 @@ Author: Jakub Glončák <xgloncj00@stud.fit.vut.cz>
 
 import logging
 from pathlib import Path
-from typing import TextIO, cast
+from typing import TextIO
 
 from lxml import etree
 from lxml.etree import ParseError, _Element
@@ -77,7 +77,7 @@ class Interpreter:
                 error_code=ErrorCode.INT_XML, message="Error parsing input XML"
             ) from e
         try:
-            root = cast("etree._Element", xml_tree.getroot())
+            root = xml_tree.getroot()
             self.current_program = Program.from_xml_tree(root)  # type: ignore[arg-type]
         except ValidationError as e:
             raise InterpreterError(
