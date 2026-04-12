@@ -41,8 +41,11 @@ def main() -> None:
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument(
         "source",
-        type=Path,
-        help="Path to the SOL-XML source file to be interpreted.",
+        nargs="?",
+        default=None,
+        type=str,
+        help="Path to the SOL-XML source file to be interpreted. "
+             "Omit (or use '-') to read from standard input.",
     )
     arg_parser.add_argument(
         "-i",
@@ -69,12 +72,8 @@ def main() -> None:
     except SystemExit:
         ErrorCode.GENERAL_OPTIONS.fire()
 
-    source_file: Path = args.source
     input_file: Path = args.input
 
-    # Check that the provided paths are valid files (exist and are not directories)
-    if not source_file.is_file():
-        ErrorCode.GENERAL_INPUT.fire("Source file does not exist or is not a file.")
     if input_file is not None and not input_file.is_file():
         ErrorCode.GENERAL_INPUT.fire("Input file does not exist or is not a file.")
 
@@ -88,8 +87,15 @@ def main() -> None:
     interpreter = Interpreter()
 
     try:
-        # Load the program from the source file
-        interpreter.load_program(source_file)
+        # Determine source: file path, '-' (explicit stdin), or None (implicit stdin)
+        if args.source is None or args.source == "-":
+            source_xml = sys.stdin.read()
+            interpreter.load_program_string(source_xml)
+        else:
+            source_file = Path(args.source)
+            if not source_file.is_file():
+                ErrorCode.GENERAL_INPUT.fire("Source file does not exist or is not a file.")
+            interpreter.load_program(source_file)
 
         if input_file is not None:
             # Execute the program using the provided input file as standard input
