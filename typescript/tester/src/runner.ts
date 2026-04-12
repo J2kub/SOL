@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SOL26 Tester - Test execution engine.
  */
 
@@ -136,15 +136,15 @@ function runSingleTest(test: TestCaseDefinition): TestCaseReport | UnexecutedRea
         return new TestCaseReport(TestResult.PASSED, parserCode, null, parserStdout, parserStderr);
       }
 
-      // COMBINED: ak parser vrátil non-zero (ale allowed) → koniec
+      // COMBINED: if the parser returned a non-zero (but allowed) code, the test ends here
       if (parserCode !== 0) {
         return new TestCaseReport(TestResult.PASSED, parserCode, null, parserStdout, parserStderr);
       }
 
-      // Parser vrátil 0 → XML je v parserStdout
+      // Parser returned 0 — XML output is in parserStdout
       xmlPath = writeTempSource(parserStdout, "xml");
     } else {
-      // EXECUTE_ONLY — zdroj je už XML
+      // EXECUTE_ONLY — source is already an XML file
       const source = fs.readFileSync(test.test_source_path, "utf-8");
       const sourceOnly = extractSource(source);
       xmlPath = writeTempSource(sourceOnly, "xml");
@@ -220,7 +220,8 @@ function runSingleTest(test: TestCaseDefinition): TestCaseReport | UnexecutedRea
 // ------------------------------------------------------------------
 
 export async function runTests(
-  tests: TestCaseDefinition[]
+  tests: TestCaseDefinition[],
+  unexecutedOut: Record<string, import("./models.js").UnexecutedReason>
 ): Promise<Record<string, CategoryReport>> {
   const categoryMap: Record<
     string,
@@ -242,6 +243,9 @@ export async function runTests(
       if (reportOrReason.result === TestResult.PASSED) {
         cat.passed += test.points;
       }
+    } else {
+      // runSingleTest returned UnexecutedReason (e.g. spawn failure) — record it
+      unexecutedOut[test.name] = reportOrReason;
     }
   }
 

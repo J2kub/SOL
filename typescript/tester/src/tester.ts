@@ -18,14 +18,11 @@ import { existsSync, lstatSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
-import { TestReport } from "./models.js";
-
 import { pino } from "pino";
 
 import { loadTests } from "./loader.js";
 import { runTests } from "./runner.js";
-import { CategoryReport } from "./models.js";
-
+import { CategoryReport, TestReport, UnexecutedReason } from "./models.js";
 
 const logger = pino({
   transport: {
@@ -239,7 +236,7 @@ async function main(): Promise<void> {
   let results: Record<string, CategoryReport> | null = null;
 
   if (!args.dry_run) {
-    results = await runTests(tests);
+    results = await runTests(tests, unexecuted);
   }
 
   const report = new TestReport({

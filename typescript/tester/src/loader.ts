@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SOL26 Tester - Test case discovery and parsing.
  */
 
