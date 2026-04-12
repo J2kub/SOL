@@ -23,7 +23,7 @@ def run_static_checks(program: Program, class_table: ClassTable) -> None:
     _check_duplicate_params(program)
     _check_assign_to_params(program)
     _check_class_literals_exist(program, class_table)
-    _check_attribute_method_collision(program)
+    _check_attribute_method_collision(program, class_table)
 
 
 # ------------------------------------------------------------------
@@ -281,20 +281,31 @@ def _check_expr_class_literals(
             _check_expr_class_literals(arg.expr, known, context)
 
 
-def _check_attribute_method_collision(program: Program) -> None:
+def _check_attribute_method_collision(
+    program: Program,
+    class_table: ClassTable,
+) -> None:
     """
-    Check that no <attribute> name collides with a method selector
-    defined in the same class (error 54).
+    Check that no <attribute> name collides with any method selector
+    in the class's full inheritance chain (error 54).
+
+    Per spec: a collision with an inherited method is also forbidden.
     """
     for class_def in program.classes:
-        method_selectors = {method.selector for method in class_def.methods}
+        # Collect all method selectors reachable from this class (own + inherited)
+        all_selectors: set[str] = set()
+        for ancestor in class_table.get_ancestors(class_def.name):
+            if ancestor in class_table.user_classes:
+                for method in class_table.user_classes[ancestor].methods:
+                    all_selectors.add(method.selector)
+
         for attr_def in class_def.attributes:
-            if attr_def.name in method_selectors:
+            if attr_def.name in all_selectors:
                 raise InterpreterError(
                     error_code=ErrorCode.INT_INST_ATTR,
                     message=(
                         f"Cannot create attribute '{attr_def.name}' in class "
-                        f"'{class_def.name}': name collides with a method selector"
+                        f"'{class_def.name}': name collides with an inherited method selector"
                     ),
                 )
 
@@ -308,13 +319,7 @@ def _collect_known_classes(
 
     Includes built-ins and user-defined classes.
     """
-    known: set[str] = set()
-
-    builtin_parents = getattr(ClassTable, "BUILTIN_PARENTS", None)
-    if builtin_parents is not None:
-        known.update(builtin_parents.keys())
-
+    known: set[str] = set(ClassTable.BUILTIN_PARENTS.keys())
     for class_def in program.classes:
         known.add(class_def.name)
-
     return known

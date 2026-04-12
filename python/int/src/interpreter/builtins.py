@@ -114,7 +114,8 @@ def dispatch_class_message(
                     error_code=ErrorCode.INT_OTHER,
                     message=f"Transcript show: expects String, got '{arg.class_name}'",
                 )
-            print(arg.value)
+            # Per spec: Transcript show: prints WITHOUT a trailing newline
+            print(arg.value, end="")
             return _NIL
         case _:
             raise InterpreterError(
@@ -166,8 +167,13 @@ def _dispatch_object_basic(
             return get_bool(isinstance(receiver, SOLBlock))
         case "isBoolean":
             return get_bool(isinstance(receiver, SOLBool))
-        case "print" | "printNl":
+        case "print":
+            # print: write string representation WITHOUT newline
             print(receiver.sol_as_string(), end="")
+            return receiver
+        case "printNl":
+            # printNl: write string representation WITH trailing newline
+            print(receiver.sol_as_string())
             return receiver
     return None
 
@@ -333,8 +339,11 @@ def _dispatch_integer_other(
             return SOLString(str(receiver.value))
         case "asInteger":
             return receiver
-        case "print" | "printNl":
+        case "print":
             print(receiver.sol_as_string(), end="")
+            return receiver
+        case "printNl":
+            print(receiver.sol_as_string())
             return receiver
         case "timesRepeat:":
             return _integer_times_repeat(receiver, args, invoke_block)
@@ -388,8 +397,11 @@ def _dispatch_string(
 ) -> SOLObject | None:
     """Dispatch messages understood by String."""
     match selector:
-        case "print" | "printNl":
+        case "print":
             print(receiver.value, end="")
+            return receiver
+        case "printNl":
+            print(receiver.value)
             return receiver
         case "equalTo:" | "=":
             if not isinstance(args[0], SOLString):
@@ -517,8 +529,11 @@ def _dispatch_bool_other(
             return SOLString("true" if receiver.value else "false")
         case "isBoolean":
             return _TRUE
-        case "print" | "printNl":
+        case "print":
             print(receiver.sol_as_string(), end="")
+            return receiver
+        case "printNl":
+            print(receiver.sol_as_string())
             return receiver
     return None
 
@@ -543,8 +558,11 @@ def _dispatch_nil(
             return SOLString("nil")
         case "equalTo:" | "=":
             return get_bool(isinstance(args[0], SOLNil))
-        case "print" | "printNl":
+        case "print":
             print("nil", end="")
+            return receiver
+        case "printNl":
+            print("nil")
             return receiver
     return None
 
@@ -665,6 +683,7 @@ def _copy_from(class_name: str, obj: SOLObject) -> SOLObject:
         case _:
             new_obj = _instantiate_subclass(class_name, obj)
 
+    # Shallow-copy instance attributes from source object
     new_obj.attributes = dict(obj.attributes)
     return new_obj
 
@@ -674,6 +693,7 @@ def _instantiate_subclass(class_name: str, obj: SOLObject) -> SOLObject:
     if isinstance(obj, SOLInteger):
         new_instance = SOLInteger(obj.value)
         new_instance.class_name = class_name
+        # attributes copied by caller (_copy_from)
         return new_instance
     if isinstance(obj, SOLString):
         raise InterpreterError(
@@ -684,7 +704,9 @@ def _instantiate_subclass(class_name: str, obj: SOLObject) -> SOLObject:
             ),
         )
     if isinstance(obj, SOLInstance):
-        return SOLInstance(class_name)
+        new_instance2 = SOLInstance(class_name)
+        # attributes copied by caller (_copy_from)
+        return new_instance2
 
     raise InterpreterError(
         error_code=ErrorCode.INT_INVALID_ARG,
