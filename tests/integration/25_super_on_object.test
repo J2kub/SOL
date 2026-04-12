@@ -1,0 +1,21 @@
++++errors
+***super dispatch on Object — DNU error 51
+!E! 51
+
+<?xml version="1.0" encoding="UTF-8"?>
+<program language="SOL26" description="Super dispatch on Object triggers DNU">
+  <class name="Main" parent="Object">
+    <method selector="run">
+      <block arity="0">
+        <assign order="1">
+          <var name="_"/>
+          <expr>
+            <send selector="unknownMsg">
+              <expr><var name="super"/></expr>
+            </send>
+          </expr>
+        </assign>
+      </block>
+    </method>
+  </class>
+</program>
