@@ -16,7 +16,7 @@ from interpreter.input_model import ClassDef, Method
 class ClassTable:
     """Stores all class definitions (built-in and user-defined)."""
 
-    # Správna hierarchia podľa spec — žiadna trieda Boolean neexistuje!
+    # Correct built-in hierarchy per spec — no Boolean class exists
     BUILTIN_PARENTS: ClassVar[dict[str, str | None]] = {
         "Object": None,
         "Nil": "Object",

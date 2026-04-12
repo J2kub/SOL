@@ -23,10 +23,10 @@ from interpreter.sol_objects import (
     SOLString,
 )
 
-# Typ callbacku pre spustenie bloku — inject z Interpreter._invoke_block
+# BlockInvoker type — injected from Interpreter._invoke_block
 BlockInvoker = Callable[[SOLBlock, list[SOLObject]], SOLObject]
 
-# Globálne singletons
+# Singletons for Nil, True, False
 _NIL = SOLNil()
 _TRUE = SOLBool(True)
 _FALSE = SOLBool(False)
