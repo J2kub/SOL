@@ -22,7 +22,7 @@ import { pino } from "pino";
 
 import { loadTests } from "./loader.js";
 import { runTests } from "./runner.js";
-import { CategoryReport, TestReport, UnexecutedReason } from "./models.js";
+import { CategoryReport, TestReport } from "./models.js";
 
 const logger = pino({
   transport: {
