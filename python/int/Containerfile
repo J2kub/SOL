@@ -1,0 +1,24 @@
+# ---------------------------------------------------------------------------
+# Stage: runtime
+# Lightweight image that directly runs the SOL26 interpreter.
+# Built with:  docker build --target runtime --tag xloginXX:runtime .
+# Run with:    docker run --rm -v /path/to/programs:/tmp/sol xloginXX:runtime \
+#                  --source /tmp/sol/program.solxml
+# ---------------------------------------------------------------------------
+FROM python:3.14-slim AS runtime
+
+# Install lxml C-library (required by pydantic-xml[lxml])
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libxml2 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy only production dependencies first (layer-cache friendly)
+COPY python/int/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy interpreter source
+COPY python/int/src/ ./src/
+
+ENTRYPOINT ["python3", "src/solint.py"]
