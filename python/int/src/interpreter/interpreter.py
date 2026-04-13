@@ -15,7 +15,7 @@ from lxml import etree
 from lxml.etree import ParseError, _Element
 from pydantic import ValidationError
 
-from interpreter.builtins import dispatch_builtin, dispatch_class_message
+from interpreter.builtins import dispatch_builtin, dispatch_class_message, get_bool, get_nil
 from interpreter.class_table import ClassTable
 from interpreter.environment import Environment
 from interpreter.error_codes import ErrorCode
@@ -34,6 +34,9 @@ from interpreter.sol_objects import (
 from interpreter.static_checks import run_static_checks
 
 logger = logging.getLogger(__name__)
+
+# Singletons re-exported from builtins for use inside interpreter
+_NIL = get_nil()
 
 
 class SuperWrapper(SOLObject):
@@ -160,13 +163,13 @@ class Interpreter:
             a.real_obj if isinstance(a, SuperWrapper) else a for a in args
         ]
 
-        # ── 1. Class message (new, from:, String read) ──────────────────────────────────
+        # ── 1. Class message (new, from:, String read) ─────────────────────────────────────────────
         if isinstance(receiver, SOLClassRef):
             return dispatch_class_message(
                 receiver.ref_class_name, selector, resolved_args
             )
 
-        # ── 2. Resolve SuperWrapper ───────────────────────────────────────────────
+        # ── 2. Resolve SuperWrapper ─────────────────────────────────────────────────────
         super_start_class: str | None = None
         actual_receiver: SOLObject
 
@@ -182,7 +185,7 @@ class Interpreter:
         else:
             actual_receiver = receiver
 
-        # ── 3. Block value / whileTrue: / whileFalse: ───────────────────────────────────
+        # ── 3. Block value / whileTrue: / whileFalse: ───────────────────────────────────────────
         # Blocks are only dispatched without super (super on a Block makes no sense)
         if isinstance(actual_receiver, SOLBlock) and super_start_class is None:
             block_result = dispatch_builtin(
@@ -195,7 +198,7 @@ class Interpreter:
                 message=f"Block does not understand '{selector}'",
             )
 
-        # ── 4. User-defined method lookup ──────────────────────────────────────────
+        # ── 4. User-defined method lookup ──────────────────────────────────────────────────
         start_class = (
             super_start_class if super_start_class else actual_receiver.class_name
         )
@@ -212,14 +215,14 @@ class Interpreter:
                 method_env.set(param.name, arg)
             return self._execute_block(method.block, method_env)
 
-        # ── 5. Built-in method (Integer, String, Bool, Nil, Object) ─────────────────
+        # ── 5. Built-in method (Integer, String, Bool, Nil, Object) ─────────────────────────
         builtin_result = dispatch_builtin(
             actual_receiver, selector, resolved_args, self._invoke_block
         )
         if builtin_result is not None:
             return builtin_result
 
-        # ── 6. Instance attribute getter (no args, no colon) ────────────────────────
+        # ── 6. Instance attribute getter (no args, no colon) ────────────────────────────
         if not resolved_args and ":" not in selector:
             if selector in actual_receiver.attributes:
                 return actual_receiver.attributes[selector]
@@ -228,7 +231,7 @@ class Interpreter:
                 message=f"'{actual_receiver.class_name}' does not understand '{selector}'",
             )
 
-        # ── 7. Instance attribute setter (one arg, exactly one colon) ───────────────
+        # ── 7. Instance attribute setter (one arg, exactly one colon) ─────────────────────
         if (
             len(resolved_args) == 1
             and selector.endswith(":")
@@ -268,7 +271,8 @@ class Interpreter:
 
     def _execute_block(self, block: Block, env: Environment) -> SOLObject:
         """Execute a sequence of assignments and return the last evaluated value."""
-        result: SOLObject = SOLNil()
+        # Use the singleton nil — important for identicalTo: correctness
+        result: SOLObject = _NIL
         for assign in block.assigns:
             raw = self._evaluate_expr(assign.expr, env)
             # super on right side of assignment behaves as self
@@ -312,11 +316,14 @@ class Interpreter:
         """Resolve a variable name or keyword (nil, true, false, self, super)."""
         match name:
             case "nil":
-                return SOLNil()
+                # Return the singleton nil — identicalTo: nil == nil must be true
+                return _NIL
             case "true":
-                return SOLBool(True)
+                # Return the singleton true
+                return get_bool(True)
             case "false":
-                return SOLBool(False)
+                # Return the singleton false
+                return get_bool(False)
             case "self":
                 self_obj = env.get("self")
                 if self_obj is None:
@@ -342,8 +349,9 @@ class Interpreter:
             case _:
                 val = env.get(name)
                 if val is None:
+                    # Undefined variable at runtime is a runtime error (52), not static (32)
                     raise InterpreterError(
-                        error_code=ErrorCode.SEM_UNDEF,
+                        error_code=ErrorCode.INT_OTHER,
                         message=f"Undefined variable: '{name}'",
                     )
                 return val
@@ -356,11 +364,14 @@ class Interpreter:
             case "String":
                 return SOLString(literal.value)
             case "True":
-                return SOLBool(True)
+                # Use singleton — identicalTo: true == true must be true
+                return get_bool(True)
             case "False":
-                return SOLBool(False)
+                # Use singleton — identicalTo: false == false must be true
+                return get_bool(False)
             case "Nil":
-                return SOLNil()
+                # Use singleton — identicalTo: nil == nil must be true
+                return _NIL
             case "class":
                 # Class literal used as receiver for new / from: / read
                 return SOLClassRef(literal.value)
@@ -393,7 +404,10 @@ class Interpreter:
         builtin_method_names = {
             "identicalTo",
             "equalTo",
+            "=",
+            "~=",
             "asString",
+            "printString",
             "isNil",
             "notNil",
             "isNumber",
@@ -401,6 +415,7 @@ class Interpreter:
             "isBlock",
             "isBoolean",
             "print",
+            "printNl",
             "ifNil",
             "ifNotNil",
             "ifNil:ifNotNil",
@@ -418,6 +433,7 @@ class Interpreter:
             "timesRepeat",
             "concatenateWith",
             "length",
+            "size",
             "startsWith:endsBefore",
             "ifTrue",
             "ifFalse",
@@ -426,8 +442,11 @@ class Interpreter:
             "not",
             "and",
             "or",
-            "whileTrue:",
-            "whileFalse:",
+            "whileTrue",
+            "whileFalse",
+            "value",
+            "value:value",
+            "value:value:value",
         }
 
         if attr_name in builtin_method_names:
