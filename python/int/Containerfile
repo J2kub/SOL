@@ -3,7 +3,9 @@
 # Lightweight image that directly runs the SOL26 interpreter.
 # Built with:  docker build --target runtime --tag xloginXX:runtime .
 # Run with:    docker run --rm -v /path/to/programs:/tmp/sol xloginXX:runtime \
-#                  --source /tmp/sol/program.solxml
+#                  /tmp/sol/program.solxml
+# Or read from stdin:
+#              docker run --rm xloginXX:runtime - < program.solxml
 # ---------------------------------------------------------------------------
 FROM python:3.14-slim AS runtime
 
