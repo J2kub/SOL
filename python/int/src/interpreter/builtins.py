@@ -416,7 +416,13 @@ def _dispatch_string(
                 return _NIL
         case "concatenateWith:" | ",":
             if not isinstance(args[0], SOLString):
-                return _NIL
+                raise InterpreterError(
+                    error_code=ErrorCode.INT_OTHER,
+                    message=(
+                        f"'{selector}' expects String argument, "
+                        f"got '{args[0].class_name}'"
+                    ),
+                )
             return SOLString(receiver.value + args[0].value)
         case "length" | "size":
             return SOLInteger(len(receiver.value))

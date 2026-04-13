@@ -18,6 +18,11 @@ from interpreter.error_codes import ErrorCode
 from interpreter.exceptions import InterpreterError
 from interpreter.interpreter import Interpreter
 
+# Increase recursion limit to handle deeply nested SOL26 programs.
+# The default (1000) is too low for recursive SOL26 methods.
+# RecursionError is caught below and mapped to INT_OTHER.
+sys.setrecursionlimit(10_000)
+
 
 def main() -> None:
     """
@@ -107,6 +112,11 @@ def main() -> None:
     except InterpreterError as e:
         logger.debug("InterpreterError", exc_info=e)
         e.error_code.fire(str(e))
+    except RecursionError:
+        # Deep SOL26 recursion exceeded even the raised sys.setrecursionlimit.
+        # Report as a runtime error rather than crashing with an unhandled exception.
+        logger.error("Maximum recursion depth exceeded during interpretation")
+        ErrorCode.INT_OTHER.fire("Maximum recursion depth exceeded")
     except SystemExit as e:
         # You are NOT allowed to use exit(), sys.exit(), etc. anywhere in your code.
         # Handle interpretation errors by raising an appropriate InterpreterError
