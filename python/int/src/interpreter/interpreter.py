@@ -23,11 +23,9 @@ from interpreter.exceptions import InterpreterError
 from interpreter.input_model import Block, Expr, Literal, Method, Program
 from interpreter.sol_objects import (
     SOLBlock,
-    SOLBool,
     SOLClassRef,
     SOLInstance,
     SOLInteger,
-    SOLNil,
     SOLObject,
     SOLString,
 )
@@ -163,7 +161,8 @@ class Interpreter:
             a.real_obj if isinstance(a, SuperWrapper) else a for a in args
         ]
 
-        # ── 1. Class message (new, from:, String read) ─────────────────────────────────────────────
+        # ── 1. Class message (new, from:, String read)
+        # ─────────────────────────────────────────────
         if isinstance(receiver, SOLClassRef):
             return dispatch_class_message(
                 receiver.ref_class_name, selector, resolved_args

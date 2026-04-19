@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: sol26-interpreter
+Version: 1.0.0
+Summary: An interpreter for SOL26, a simple object language.
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: pydantic~=2.12.5
+Requires-Dist: pydantic-xml[lxml]~=2.19.0
+Requires-Dist: types-lxml>=2026.2.16

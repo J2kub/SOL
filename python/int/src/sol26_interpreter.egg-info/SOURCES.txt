@@ -1,0 +1,17 @@
+pyproject.toml
+src/solint.py
+src/interpreter/__init__.py
+src/interpreter/builtins.py
+src/interpreter/class_table.py
+src/interpreter/environment.py
+src/interpreter/error_codes.py
+src/interpreter/exceptions.py
+src/interpreter/input_model.py
+src/interpreter/interpreter.py
+src/interpreter/sol_objects.py
+src/interpreter/static_checks.py
+src/sol26_interpreter.egg-info/PKG-INFO
+src/sol26_interpreter.egg-info/SOURCES.txt
+src/sol26_interpreter.egg-info/dependency_links.txt
+src/sol26_interpreter.egg-info/requires.txt
+src/sol26_interpreter.egg-info/top_level.txt

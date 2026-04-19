@@ -710,9 +710,8 @@ def _instantiate_subclass(class_name: str, obj: SOLObject) -> SOLObject:
             ),
         )
     if isinstance(obj, SOLInstance):
-        new_instance2 = SOLInstance(class_name)
-        # attributes copied by caller (_copy_from)
-        return new_instance2
+        return SOLInstance(class_name)
+
 
     raise InterpreterError(
         error_code=ErrorCode.INT_INVALID_ARG,
