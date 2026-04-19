@@ -4,10 +4,9 @@
 FROM node:24-alpine AS check
 RUN apk add --no-cache python3 py3-pip python3-dev bash
 RUN pip install --no-cache-dir --break-system-packages ruff mypy
-WORKDIR /src/tester
+WORKDIR /srctester
 COPY typescript/tester/package*.json ./
 RUN npm ci
-ENV PATH="/src/tester/node_modules/.bin:$PATH"
 ENTRYPOINT ["bash"]
 
 # ── build-test: prekladač TypeScript testera ──────────────────────
