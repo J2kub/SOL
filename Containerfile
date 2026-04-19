@@ -1,13 +1,16 @@
 # syntax=docker/dockerfile:1
 
 # ── check: nástroje kvality kódu ─────────────────────────────────
-FROM node:24-alpine AS check
-RUN apk add --no-cache python3 py3-pip python3-dev bash
-RUN pip install --no-cache-dir --break-system-packages ruff mypy
-WORKDIR /srctester
-COPY typescript/tester/package*.json ./
-RUN npm ci
-ENTRYPOINT ["bash"]
+FROM python:3.14-rc-slim AS check
+RUN apt-get update && apt-get install -y \
+    curl gcc libxml2-dev libxslt1-dev zlib1g-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir ruff mypy pydantic pydantic-xml
+RUN npm install -g eslint prettier
+WORKDIR /src
+ENTRYPOINT ["/bin/bash"]
 
 # ── build-test: prekladač TypeScript testera ──────────────────────
 FROM node:24-alpine AS build-test
