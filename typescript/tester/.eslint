@@ -1,2 +1,2 @@
 #!/bin/sh
-exec ./node_modules/.bin/eslint "$@"
+exec /srctester/node_modules/.bin/eslint "$@"
