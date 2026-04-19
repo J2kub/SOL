@@ -26,7 +26,7 @@ const INT_DIR = process.env["SOL_INT_DIR"] ?? "/int";
 const SOLINT_SCRIPT = path.join(INT_DIR, "src", "solint.py");
 const INT_SRC_DIR = path.join(INT_DIR, "src");
 
-const INTERPRETER_CMD = process.env["SOL_INTERPRETER"] ?? "python";
+const INTERPRETER_CMD = process.env["SOL_INTERPRETER"] ?? "python3";
 const INTERPRETER_ARGS = process.env["SOL_INTERPRETER_ARGS"]?.split(" ") ?? [SOLINT_SCRIPT];
 const SOL2XML_CMD = process.env["SOL2XML"] ?? "sol2xml";
 
