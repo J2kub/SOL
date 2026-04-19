@@ -79,7 +79,7 @@ class Interpreter:
             ) from e
         try:
             root = xml_tree.getroot()
-            self.current_program = Program.from_xml_tree(root)  # type: ignore[arg-type]
+            self.current_program = Program.from_xml_tree(root)
         except ValidationError as e:
             raise InterpreterError(
                 error_code=ErrorCode.INT_STRUCTURE, message="Invalid SOL-XML structure"
