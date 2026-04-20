@@ -27,9 +27,9 @@ COPY python/int/pyproject.toml ./
 # ---------------------------------------------------------------------------
 FROM build AS check
 
-RUN ruff check src/ \
-    && ruff format --check src/ \
-    && mypy src/
+RUN ruff check \
+    && ruff format --check \
+    && mypy .
 
 # ---------------------------------------------------------------------------
 # Stage: runtime
