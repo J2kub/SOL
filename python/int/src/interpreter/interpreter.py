@@ -264,7 +264,7 @@ class Interpreter:
         # __current_class__ flows through parent chain from captured_env — no reset needed
 
         for param, arg in zip(block_def.parameters, args, strict=True):
-            block_env.set(param.name, arg)
+            block_env.variables[param.name] = arg
 
         return self._execute_block(block_def, block_env)
 
