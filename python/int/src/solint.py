@@ -18,11 +18,6 @@ from interpreter.error_codes import ErrorCode
 from interpreter.exceptions import InterpreterError
 from interpreter.interpreter import Interpreter
 
-# Increase recursion limit to handle deeply nested SOL26 programs.
-# The default (1000) is too low for recursive SOL26 methods.
-# RecursionError is caught below and mapped to INT_OTHER.
-sys.setrecursionlimit(10_000)
-
 
 def main() -> None:
     """
@@ -45,19 +40,19 @@ def main() -> None:
     # Define the CLI arguments
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument(
-
+        "-s",
         "--source",
         type=Path,
         required=True,
         help="Path to the SOL-XML source file to be interpreted.",
     )
-        arg_parser.add_argument(
+    arg_parser.add_argument(
         "-i",
         "--input",
         type=Path,
         required=False,
-        default=None,
-        help="Path to an optional input file for the interpreter.",
+        help="Path to a file that will be used as the standard input "
+        "for the interpreted program (optional).",
     )
     arg_parser.add_argument(
         "-v",
@@ -76,9 +71,12 @@ def main() -> None:
     except SystemExit:
         ErrorCode.GENERAL_OPTIONS.fire()
 
-    input_file: Path = args.input
     source_file: Path = args.source
+    input_file: Path = args.input
 
+    # Check that the provided paths are valid files (exist and are not directories)
+    if not source_file.is_file():
+        ErrorCode.GENERAL_INPUT.fire("Source file does not exist or is not a file.")
     if input_file is not None and not input_file.is_file():
         ErrorCode.GENERAL_INPUT.fire("Input file does not exist or is not a file.")
 
@@ -92,13 +90,8 @@ def main() -> None:
     interpreter = Interpreter()
 
     try:
-
-                # Load the program from the source file
+        # Load the program from the source file
         interpreter.load_program(source_file)
-            
-    # Check that the provided paths are valid files (exist and are not directories)
-    if not source_file.is_file():
-        ErrorCode.GENERAL_INPUT.fire("Source file does not exist or is not a file.")
 
         if input_file is not None:
             # Execute the program using the provided input file as standard input
@@ -110,11 +103,6 @@ def main() -> None:
     except InterpreterError as e:
         logger.debug("InterpreterError", exc_info=e)
         e.error_code.fire(str(e))
-    except RecursionError:
-        # Deep SOL26 recursion exceeded even the raised sys.setrecursionlimit.
-        # Report as a runtime error rather than crashing with an unhandled exception.
-        logger.error("Maximum recursion depth exceeded during interpretation")
-        ErrorCode.INT_OTHER.fire("Maximum recursion depth exceeded")
     except SystemExit as e:
         # You are NOT allowed to use exit(), sys.exit(), etc. anywhere in your code.
         # Handle interpretation errors by raising an appropriate InterpreterError
