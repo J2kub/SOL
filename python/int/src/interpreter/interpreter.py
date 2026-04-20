@@ -348,9 +348,9 @@ class Interpreter:
             case _:
                 val = env.get(name)
                 if val is None:
-                    # Undefined variable at runtime is a runtime error (52), not static (32)
+                    # Undefined variable at runtime is a  static (32)
                     raise InterpreterError(
-                        error_code=ErrorCode.INT_OTHER,
+                        error_code=ErrorCode.SEM_UNDEF,
                         message=f"Undefined variable: '{name}'",
                     )
                 return val

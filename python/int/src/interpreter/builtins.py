@@ -114,8 +114,9 @@ def dispatch_class_message(
                     error_code=ErrorCode.INT_OTHER,
                     message=f"Transcript show: expects String, got '{arg.class_name}'",
                 )
-            # Per spec: Transcript show: prints WITHOUT a trailing newline
-            print(arg.value, end="")
+            # Per spec: Transcript show: prints WITH a trailing newline
+            print(arg.value)
+
             return _NIL
         case _:
             raise InterpreterError(
