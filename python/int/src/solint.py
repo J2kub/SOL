@@ -51,6 +51,14 @@ def main() -> None:
         required=True,
         help="Path to the SOL-XML source file to be interpreted.",
     )
+        arg_parser.add_argument(
+        "-i",
+        "--input",
+        type=Path,
+        required=False,
+        default=None,
+        help="Path to an optional input file for the interpreter.",
+    )
     arg_parser.add_argument(
         "-v",
         "--verbose",
@@ -69,6 +77,7 @@ def main() -> None:
         ErrorCode.GENERAL_OPTIONS.fire()
 
     input_file: Path = args.input
+    source_file: Path = args.source
 
     if input_file is not None and not input_file.is_file():
         ErrorCode.GENERAL_INPUT.fire("Input file does not exist or is not a file.")
