@@ -69,22 +69,22 @@ function runProcess(
 }
 
 function runDiff(actualOutput: string, expectedFile: string): string | null {
-  const tmpFile = path.join(os.tmpdir(), `sol26_actual_${process.pid}.txt`);
+  const tmpFile = path.join(os.tmpdir(), `sol26_actual_${String(process.pid)}.txt`);
   fs.writeFileSync(tmpFile, actualOutput, "utf-8");
 
   try {
     const result = spawnSync("diff", [expectedFile, tmpFile], {
       maxBuffer: 1024 * 1024,
     });
-    if (result.status === 0) return null;
-    return result.stdout?.toString("utf-8") ?? "";
+    if (result.status === 0) return null;  
+    return result.stdout.toString("utf-8");
   } finally {
     fs.unlinkSync(tmpFile);
   }
 }
 
 function writeTempSource(content: string, ext: string): string {
-  const tmpFile = path.join(os.tmpdir(), `sol26_src_${process.pid}.${ext}`);
+  const tmpFile = path.join(os.tmpdir(), `sol26_src_${String(process.pid)}.${ext}`);
   fs.writeFileSync(tmpFile, content, "utf-8");
   return tmpFile;
 }
@@ -131,27 +131,23 @@ function runSingleTest(test: TestCaseDefinition): TestCaseReport | UnexecutedRea
         );
       }
 
-      // PARSE_ONLY ends here
       if (test.test_type === TestCaseType.PARSE_ONLY) {
         return new TestCaseReport(TestResult.PASSED, parserCode, null, parserStdout, parserStderr);
       }
 
-      // COMBINED: if the parser returned a non-zero (but allowed) code, the test ends here
       if (parserCode !== 0) {
         return new TestCaseReport(TestResult.PASSED, parserCode, null, parserStdout, parserStderr);
       }
 
-      // Parser returned 0 — XML output is in parserStdout
       xmlPath = writeTempSource(parserStdout, "xml");
     } else {
-      // EXECUTE_ONLY — source is already an XML file
       const source = fs.readFileSync(test.test_source_path, "utf-8");
       const sourceOnly = extractSource(source);
       xmlPath = writeTempSource(sourceOnly, "xml");
     }
 
     // ── Phase 2: Interpreter ────────────────────────────
-    if (xmlPath === null) {
+    if (!xmlPath) {
       return new UnexecutedReason(UnexecutedReasonCode.OTHER, "No XML file to interpret");
     }
 
@@ -219,10 +215,10 @@ function runSingleTest(test: TestCaseDefinition): TestCaseReport | UnexecutedRea
 // Main export
 // ------------------------------------------------------------------
 
-export async function runTests(
+export function runTests(
   tests: TestCaseDefinition[],
   unexecutedOut: Record<string, import("./models.js").UnexecutedReason>
-): Promise<Record<string, CategoryReport>> {
+): Record<string, CategoryReport> {
   const categoryMap: Record<
     string,
     { total: number; passed: number; results: Record<string, TestCaseReport> }
@@ -232,7 +228,9 @@ export async function runTests(
     if (!categoryMap[test.category]) {
       categoryMap[test.category] = { total: 0, passed: 0, results: {} };
     }
-    const cat = categoryMap[test.category]!;
+
+    const cat = categoryMap[test.category];
+    if (!cat) continue;
 
     cat.total += test.points;
 
@@ -244,7 +242,6 @@ export async function runTests(
         cat.passed += test.points;
       }
     } else {
-      // runSingleTest returned UnexecutedReason (e.g. spawn failure) — record it
       unexecutedOut[test.name] = reportOrReason;
     }
   }
