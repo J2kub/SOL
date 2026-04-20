@@ -1,11 +1,44 @@
 # ---------------------------------------------------------------------------
+# Stage: build
+# Installs all dependencies (including dev tools) and runs quality checks.
+# Built with:  docker build --target build --tag xgloncj00:build .
+# ---------------------------------------------------------------------------
+FROM python:3.14-slim AS build
+
+# Install lxml C-library (required by pydantic-xml[lxml])
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libxml2 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install all dependencies (runtime + dev: ruff, mypy, pytest)
+COPY python/int/requirements.txt python/int/requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+
+# Copy source and project config
+COPY python/int/src/ ./src/
+COPY python/int/pyproject.toml ./
+
+# ---------------------------------------------------------------------------
+# Stage: check
+# Runs ruff and mypy inside the build environment.
+# Built with:  docker build --target check --tag xgloncj00:check .
+# ---------------------------------------------------------------------------
+FROM build AS check
+
+RUN ruff check src/ \
+    && ruff format --check src/ \
+    && mypy src/
+
+# ---------------------------------------------------------------------------
 # Stage: runtime
 # Lightweight image that directly runs the SOL26 interpreter.
-# Built with:  docker build --target runtime --tag xloginXX:runtime .
-# Run with:    docker run --rm -v /path/to/programs:/tmp/sol xloginXX:runtime \
+# Built with:  docker build --target runtime --tag xgloncj00:runtime .
+# Run with:    docker run --rm -v /path/to/programs:/tmp/sol xgloncj00:runtime \
 #                  /tmp/sol/program.solxml
 # Or read from stdin:
-#              docker run --rm xloginXX:runtime - < program.solxml
+#              docker run --rm xgloncj00:runtime - < program.solxml
 # ---------------------------------------------------------------------------
 FROM python:3.14-slim AS runtime
 
@@ -16,11 +49,8 @@ RUN apt-get update \
 
 WORKDIR /app
 
-# Copy only production dependencies first (layer-cache friendly)
-COPY python/int/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy interpreter source
-COPY python/int/src/ ./src/
+# Copy only installed runtime packages and source from build stage
+COPY --from=build /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
+COPY --from=build /app/src ./src/
 
 ENTRYPOINT ["python3", "src/solint.py"]
