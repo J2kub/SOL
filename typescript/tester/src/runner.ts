@@ -54,8 +54,8 @@ function runProcess(
     },
   });
 
-  const stdout = result.stdout?.toString("utf-8") ?? "";
-  let stderr = result.stderr?.toString("utf-8") ?? "";
+  const stdout = result.stdout.toString("utf-8");
+  let stderr = result.stderr.toString("utf-8");
 
   if (result.error) {
     stderr += (stderr ? "\n" : "") + `spawn error: ${result.error.message}`;

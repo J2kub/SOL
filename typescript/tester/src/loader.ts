@@ -49,9 +49,7 @@ function findTestFiles(dir: string, recursive: boolean): string[] {
 // Parsing a single .test file
 // ------------------------------------------------------------------
 
-function parseTestFile(
-  filePath: string
-): TestCaseDefinition | UnexecutedReason {
+function parseTestFile(filePath: string): TestCaseDefinition | UnexecutedReason {
   const name = path.basename(filePath, ".test");
   const dir = path.dirname(filePath);
   const raw = fs.readFileSync(filePath, "utf-8");
@@ -144,10 +142,7 @@ function parseTestFile(
 // Filtering
 // ------------------------------------------------------------------
 
-function makeMatchers(
-  patterns: string[] | null,
-  useRegex: boolean
-): ((s: string) => boolean)[] {
+function makeMatchers(patterns: string[] | null, useRegex: boolean): ((s: string) => boolean)[] {
   if (!patterns) return [];
   return patterns.map((p) => {
     const trimmed = p.trim();
@@ -159,10 +154,7 @@ function makeMatchers(
   });
 }
 
-function shouldInclude(
-  test: TestCaseDefinition,
-  args: CliFilterArgs
-): boolean {
+function shouldInclude(test: TestCaseDefinition, args: CliFilterArgs): boolean {
   const useRegex = args.regex_filters;
 
   // Include matchers — if any defined, test must match at least one

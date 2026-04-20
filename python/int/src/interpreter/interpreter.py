@@ -99,7 +99,7 @@ class Interpreter:
                 error_code=ErrorCode.INT_XML, message="Error parsing input XML"
             ) from e
         try:
-            self.current_program = Program.from_xml_tree(raw_root)  # type: ignore[arg-type]
+            self.current_program = Program.from_xml_tree(raw_root)
         except ValidationError as e:
             raise InterpreterError(
                 error_code=ErrorCode.INT_STRUCTURE, message="Invalid SOL-XML structure"
