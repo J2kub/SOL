@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ── check: nástroje kvality kódu ─────────────────────────────────
-FROM python:3.14-rc-slim AS check
+FROM python:3.14-slim AS check
 RUN apt-get update && apt-get install -y \
     curl gcc libxml2-dev libxslt1-dev zlib1g-dev \
     && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
@@ -22,7 +22,7 @@ COPY typescript/tester/tsconfig.json ./
 RUN ./node_modules/.bin/tsc --project tsconfig.json
 
 # ── runtime: interpreter ─────────────────────────────────────────
-FROM python:3.14-rc-slim AS runtime
+FROM python:3.14-slim AS runtime
 WORKDIR /int/src
 COPY python/int/src ./
 COPY python/int/requirements.txt /int/requirements.txt
