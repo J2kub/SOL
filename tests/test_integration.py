@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tempfile
+import os
 from pathlib import Path
 
 import pytest
@@ -37,13 +39,21 @@ def test_integration(name: str, test_path: Path) -> None:
     """Run a single SOL26 integration test and check exit code + stdout."""
     expected_exit, xml_input = parse_test_file(test_path)
 
-    result = subprocess.run(
-        [sys.executable, str(INTERPRETER)],
-        input=xml_input,
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".xml", encoding="utf-8", delete=False
+    ) as tmp:
+        tmp.write(xml_input)
+        tmp_path = tmp.name
+
+    try:
+        result = subprocess.run(
+            [sys.executable, str(INTERPRETER), "-s", tmp_path],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    finally:
+        os.unlink(tmp_path)
 
     assert result.returncode == expected_exit, (
         f"Exit code mismatch:\n"
