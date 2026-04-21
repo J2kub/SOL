@@ -1,0 +1,49 @@
+﻿+++runtime_error
+***sending completely unknown message to an object yields error 51
+!I! 51
+
+<?xml version="1.0" encoding="UTF-8"?>
+<program language="SOL26" description="unknown message dispatch">
+  <class name="A" parent="Object">
+    <method selector="foo">
+      <block arity="0">
+        <assign order="1">
+          <var name="_"/>
+          <expr><literal class="Integer" value="1"/></expr>
+        </assign>
+      </block>
+    </method>
+  </class>
+  <class name="B" parent="A">
+    <method selector="bar">
+      <block arity="0">
+        <assign order="1">
+          <var name="_"/>
+          <expr><literal class="Integer" value="2"/></expr>
+        </assign>
+      </block>
+    </method>
+  </class>
+  <class name="Main" parent="Object">
+    <method selector="run">
+      <block arity="0">
+        <assign order="1">
+          <var name="obj"/>
+          <expr>
+            <send selector="new">
+              <expr><literal class="class" value="B"/></expr>
+            </send>
+          </expr>
+        </assign>
+        <assign order="2">
+          <var name="_"/>
+          <expr>
+            <send selector="baz">
+              <expr><var name="obj"/></expr>
+            </send>
+          </expr>
+        </assign>
+      </block>
+    </method>
+  </class>
+</program>

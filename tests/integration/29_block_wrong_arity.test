@@ -1,0 +1,40 @@
+﻿+++oop
+***calling a block with 2 parameters using a 1-parameter value: selector yields error 51
+!I! 51
+
+<?xml version="1.0" encoding="UTF-8"?>
+<program language="SOL26" description="block wrong arity">
+  <class name="Main" parent="Object">
+    <method selector="run">
+      <block arity="0">
+        <assign order="1">
+          <var name="myBlock"/>
+          <expr>
+            <block arity="2">
+              <parameter name="a" order="1"/>
+              <parameter name="b" order="2"/>
+              <assign order="1">
+                <var name="_"/>
+                <expr>
+                  <send selector="plus:">
+                    <expr><var name="a"/></expr>
+                    <arg order="1"><expr><var name="b"/></expr></arg>
+                  </send>
+                </expr>
+              </assign>
+            </block>
+          </expr>
+        </assign>
+        <assign order="2">
+          <var name="_"/>
+          <expr>
+            <send selector="value:">
+              <expr><var name="myBlock"/></expr>
+              <arg order="1"><expr><literal class="Integer" value="10"/></expr></arg>
+            </send>
+          </expr>
+        </assign>
+      </block>
+    </method>
+  </class>
+</program>
