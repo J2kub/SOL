@@ -198,7 +198,7 @@ function parseArguments(): CliArguments {
   return args;
 }
 
-function main(): void {
+async function main(): Promise<void> {
   /**
    * The main entry point for the SOL26 integration testing script.
    * It parses command-line arguments and executes the testing process.
@@ -236,7 +236,7 @@ function main(): void {
   let results: Record<string, CategoryReport> | null = null;
 
   if (!args.dry_run) {
-    results = runTests(tests, unexecuted);
+    results = await runTests(tests, unexecuted);
   }
 
   const report = new TestReport({
@@ -248,4 +248,7 @@ function main(): void {
   writeResult(report, args.output);
 }
 
-main();
+main().catch((err: unknown) => {
+  console.error(err);
+  process.exit(1);
+});
