@@ -443,9 +443,6 @@ class Interpreter:
             "or",
             "whileTrue",
             "whileFalse",
-            "value",
-            "value:value",
-            "value:value:value",
         }
 
         if attr_name in builtin_method_names:
